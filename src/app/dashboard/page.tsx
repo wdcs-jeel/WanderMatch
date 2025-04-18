@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import  LinearGradient  from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-// import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -79,7 +79,7 @@ export default function DashboardPage() {
             </View>
             {item.verified && (
               <View style={[styles.badge, styles.verifiedBadge]}>
-                {/* <Ionicons name="shield-checkmark" size={12} color="#fff" /> */}
+                <Ionicons name="shield-checkmark" size={12} color="#fff" />
                 <Text style={styles.badgeText}>Verified</Text>
               </View>
             )}
@@ -91,7 +91,7 @@ export default function DashboardPage() {
                 {item.name}, {item.age}
               </Text>
               <View style={styles.locationContainer}>
-                {/* <Ionicons name="location" size={12} color="#fff" /> */}
+                <Ionicons name="location" size={12} color="#fff" />
                 <Text style={styles.locationText}>{item.location}</Text>
               </View>
               <Text style={styles.distanceText}>{item.distance}</Text>
@@ -108,11 +108,11 @@ export default function DashboardPage() {
 
         <View style={styles.actionButtons}>
           <TouchableOpacity style={[styles.button, styles.messageButton]}>
-            {/* <Ionicons name="chatbubble-outline" size={16} color="#374151" /> */}
+            <Ionicons name="chatbubble-outline" size={16} color="#374151" />
             <Text style={styles.messageButtonText}>Message</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.button, styles.connectButton]}>
-            {/* <Ionicons name="heart" size={16} color="#fff" /> */}
+            <Ionicons name="heart" size={16} color="#fff" />
             <Text style={styles.connectButtonText}>Connect</Text>
           </TouchableOpacity>
         </View>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
   const renderEmptyState = (icon:any, title:any, description:any, buttonText:any) => (
     <View style={styles.emptyState}>
       <View style={styles.emptyStateIcon}>
-        {/* <Ionicons name={icon} size={24} color="#9CA3AF" /> */}
+        <Ionicons name={icon} size={24} color="#9CA3AF" />
       </View>
       <Text style={styles.emptyStateTitle}>{title}</Text>
       <Text style={styles.emptyStateDescription}>{description}</Text>
@@ -139,10 +139,10 @@ export default function DashboardPage() {
         <Text style={styles.headerTitle}>WanderMatch</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.iconButton}>
-            {/* <Ionicons name="notifications-outline" size={20} color="#374151" /> */}
+            <Ionicons name="notifications-outline" size={20} color="#374151" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton}>
-            {/* <Ionicons name="settings-outline" size={20} color="#374151" /> */}
+            <Ionicons name="settings-outline" size={20} color="#374151" />
           </TouchableOpacity>
         </View>
       </View>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
       <View style={styles.content}>
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
-            {/* <Ionicons name="search" size={16} color="#9CA3AF" style={styles.searchIcon} /> */}
+            <Ionicons name="search" size={16} color="#9CA3AF" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search destinations or travelers"
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             />
           </View>
           <TouchableOpacity style={styles.filterButton}>
-            {/* <Ionicons name="options-outline" size={16} color="#374151" /> */}
+            <Ionicons name="options-outline" size={16} color="#374151" />
           </TouchableOpacity>
         </View>
 
@@ -232,19 +232,19 @@ export default function DashboardPage() {
 
       <View style={styles.bottomNavigation}>
         <TouchableOpacity style={styles.navButton}>
-          {/* <Ionicons name="home" size={24} color="#F43F5E" /> */}
+          <Ionicons name="home" size={24} color="#F43F5E" />
           <Text style={[styles.navText, styles.activeNavText]}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton}>
-          {/* <Ionicons name="search" size={24} color="#6B7280" /> */}
+          <Ionicons name="search" size={24} color="#6B7280" />
           <Text style={styles.navText}>Explore</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton}>
-          {/* <Ionicons name="chatbubbles" size={24} color="#6B7280" /> */}
+          <Ionicons name="chatbubbles" size={24} color="#6B7280" />
           <Text style={styles.navText}>Messages</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton}>
-          {/* <Ionicons name="person" size={24} color="#6B7280" /> */}
+          <Ionicons name="person" size={24} color="#6B7280" />
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
       </View>
@@ -325,11 +325,14 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 42,
+    marginBottom: 15,
   },
   activeFilterChip: {
     backgroundColor: '#F43F5E',
@@ -344,13 +347,12 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
   },
   activeTab: {
@@ -500,7 +502,9 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    padding: 48,
+    height: '78%',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   emptyStateIcon: {
     width: 64,

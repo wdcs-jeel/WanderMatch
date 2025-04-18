@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, SafeAreaView } from 'r
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type RootStackParamList = {
   Onboarding: undefined;
@@ -55,7 +56,7 @@ const navigation = useNavigation<NavigationProp>();
               onPress={() => navigation.navigate('Onboarding')}
             >
               <Text style={styles.primaryButtonText}>Get Started</Text>
-              <Text style={styles.arrowIcon}>→</Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
 
             <TouchableOpacity

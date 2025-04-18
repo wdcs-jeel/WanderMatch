@@ -13,7 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import  LinearGradient  from 'react-native-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ArrowLeft, LucideProps } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -109,13 +109,13 @@ export default function OnboardingPage() {
             {activeTab === 'social' && (
               <View style={styles.tabContent}>
                 <TouchableOpacity style={styles.socialButton}>
-                  {/* <Ionicons name="logo-facebook" size={20} color="#1877F2" /> */}
+                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
                   <Text style={styles.socialButtonText}>
                     Continue with Facebook
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialButton}>
-                  {/* <Ionicons name="logo-instagram" size={20} color="#E4405F" /> */}
+                  <Ionicons name="logo-instagram" size={20} color="#E4405F" />
                   <Text style={styles.socialButtonText}>
                     Continue with Instagram
                   </Text>
@@ -129,7 +129,8 @@ export default function OnboardingPage() {
                 onPress={nextStep}
               >
                 <Text style={styles.primaryButtonText}>Continue</Text>
-                {/* <Ionicons name="arrow-forward" size={20} color="#fff" /> */}
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                {/* <Text style={styles.arrowIcon}>→</Text> */}
               </TouchableOpacity>
               <Text style={styles.termsText}>
                 By continuing, you agree to our Terms of Service and Privacy Policy
@@ -143,7 +144,7 @@ export default function OnboardingPage() {
           <View style={styles.card}>
             <View style={styles.uploadContainer}>
               <View style={styles.uploadIconContainer}>
-                {/* <Ionicons name="add-circle-outline" size={40} color="#9CA3AF" /> */}
+                <Ionicons name="add-circle-outline" size={40} color="#9CA3AF" />
               </View>
               <Text style={styles.uploadText}>
                 Upload a selfie or photo ID
@@ -172,7 +173,7 @@ export default function OnboardingPage() {
 
             <View style={styles.checkboxContainer}>
               <TouchableOpacity style={styles.checkbox}>
-                {/* <Ionicons name="square-outline" size={24} color="#374151" /> */}
+                <Ionicons name="square-outline" size={24} color="#374151" />
               </TouchableOpacity>
               <Text style={styles.checkboxLabel}>
                 I confirm this is my real identity and information
@@ -281,7 +282,7 @@ export default function OnboardingPage() {
           <View style={styles.card}>
             <View style={styles.uploadContainer}>
               <View style={styles.uploadIconContainer}>
-                {/* <Ionicons name="person-outline" size={40} color="#9CA3AF" /> */}
+                <Ionicons name="person-outline" size={40} color="#9CA3AF" />
               </View>
               <Text style={styles.uploadText}>Upload profile photos</Text>
               <TouchableOpacity style={styles.uploadButton}>
@@ -539,6 +540,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
   },
   primaryButtonText: {
     color: '#fff',
