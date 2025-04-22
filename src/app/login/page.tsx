@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -11,22 +11,98 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
-import { ArrowLeft, ArrowRight, Mail, Lock, Facebook, Instagram } from "lucide-react-native"
-import type { LucideProps } from "lucide-react-native"
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useAuth } from "../../context/AuthContext";
 
 type RootStackParamList = {
   Home: undefined
   ForgotPassword: undefined
   Onboarding: undefined
+  Dashboard: undefined
+  MainApp: undefined
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 export default function LoginPage() {
   const navigation = useNavigation<NavigationProp>()
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  
+  // Validation errors
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
+
+  // Validate email format
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validate password
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
+  };
+
+  // Validate form
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = { ...errors };
+    
+    // Reset errors
+    newErrors.email = "";
+    newErrors.password = "";
+    
+    // Validate email
+    if (!email) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Please enter a valid email";
+      isValid = false;
+    }
+    
+    // Validate password
+    if (!password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    } else if (!validatePassword(password)) {
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+    
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleLogin = async () => {
+    // Validate form before attempting login
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      await login({ email, password });
+      navigation.navigate("MainApp");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -40,7 +116,7 @@ export default function LoginPage() {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <ArrowLeft {...({ size: 24, color: "#4B5563" } as LucideProps)} />
+              <Ionicons name="arrow-back-outline" size={24} color="#4B5563" />
               <Text style={styles.backButtonText}>Back to home</Text>
             </TouchableOpacity>
 
@@ -51,16 +127,24 @@ export default function LoginPage() {
               <View style={styles.inputContainer}>
                 <View style={styles.inputWrapper}>
                   <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputFieldContainer}>
-                    <Mail {...({ size: 24, color: "#9CA3AF" } as LucideProps)} />
+                  <View style={[styles.inputFieldContainer, errors.email ? styles.inputError : null]}>
+                    <Ionicons name="mail-outline" size={24} color="#9CA3AF" />
                     <TextInput
                       style={styles.input}
                       placeholder="Enter your email"
                       placeholderTextColor="#9CA3AF"
                       keyboardType="email-address"
                       autoCapitalize="none"
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        if (errors.email) {
+                          setErrors(prev => ({ ...prev, email: "" }));
+                        }
+                      }}
                     />
                   </View>
+                  {errors.email ? <Text style={styles.fieldErrorText}>{errors.email}</Text> : null}
                 </View>
 
                 <View style={styles.inputWrapper}>
@@ -70,21 +154,46 @@ export default function LoginPage() {
                       <Text style={styles.forgotPassword}>Forgot password?</Text>
                     </TouchableOpacity>
                   </View>
-                  <View style={styles.inputFieldContainer}>
-                    <Lock {...({ size: 24, color: "#9CA3AF" } as LucideProps)} />
+                  <View style={[styles.inputFieldContainer, errors.password ? styles.inputError : null]}>
+                    <Ionicons name="lock-closed-outline" size={24} color="#9CA3AF" />
                     <TextInput
                       style={styles.input}
                       placeholder="Enter your password"
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry
+                      value={password}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (errors.password) {
+                          setErrors(prev => ({ ...prev, password: "" }));
+                        }
+                      }}
                     />
                   </View>
+                  {errors.password ? <Text style={styles.fieldErrorText}>{errors.password}</Text> : null}
                 </View>
 
-                <TouchableOpacity style={styles.signInButton}>
-                  <Text style={styles.signInButtonText}>Sign In</Text>
-                  <ArrowRight {...({ size: 24, color: "#FFFFFF" } as LucideProps)} />
+                <TouchableOpacity 
+                  style={styles.signInButton} 
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.signInButtonText}>Sign In</Text>
+                      <Ionicons name="arrow-forward" size={24} color="#fff" />
+                    </>
+                  )}
                 </TouchableOpacity>
+                
+                {error ? (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle-outline" size={20} color="#EF4444" />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                ) : null}
               </View>
 
               <View style={styles.dividerContainer}>
@@ -95,11 +204,11 @@ export default function LoginPage() {
 
               <View style={styles.socialButtonsContainer}>
                 <TouchableOpacity style={styles.socialButton}>
-                  <Facebook {...({ size: 24, color: "#2563EB" } as LucideProps)} />
+                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
                   <Text style={styles.socialButtonText}>Facebook</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialButton}>
-                  <Instagram {...({ size: 24, color: "#E11D48" } as LucideProps)} />
+                   <Ionicons name="logo-instagram" size={20} color="#E4405F" />
                   <Text style={styles.socialButtonText}>Instagram</Text>
                 </TouchableOpacity>
               </View>
@@ -190,6 +299,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#FFFFFF",
   },
+  inputError: {
+    borderColor: "#EF4444",
+  },
   inputIcon: {
     marginLeft: 12,
   },
@@ -227,6 +339,22 @@ const styles = StyleSheet.create({
   },
   signInIcon: {
     marginLeft: 8,
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    borderRadius: 6,
+    padding: 12,
+    marginTop: 8,
+  },
+  errorText: {
+    color: "#EF4444",
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
   },
   dividerContainer: {
     flexDirection: "row",
@@ -280,5 +408,10 @@ const styles = StyleSheet.create({
     color: "#E11D48",
     fontWeight: "500",
     textDecorationLine: "underline",
+  },
+  fieldErrorText: {
+    color: "#EF4444",
+    fontSize: 12,
+    marginTop: 4,
   },
 })

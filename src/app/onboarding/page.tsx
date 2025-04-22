@@ -11,12 +11,15 @@ import {
   Image,
   SafeAreaView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import  LinearGradient  from 'react-native-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { ArrowLeft, LucideProps } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
+import { profileAPI } from '../../services/api';
 
 type RootStackParamList = {
   Home: undefined
@@ -24,15 +27,259 @@ type RootStackParamList = {
   Onboarding: undefined
 }
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState('email');
-  const navigation = useNavigation<NavigationProp>()
+  const navigation = useNavigation<NavigationProp>();
+  const { register, error: authError } = useAuth();
   const totalSteps = 4;
 
+  // Form state
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    phoneNumber: '',
+    fullName: '',
+    dateOfBirth: '',
+    travelType: '',
+    lookingFor: [] as string[],
+    travelStyle: [] as string[],
+    bio: '',
+    topDestinations: [] as string[],
+    languages: [] as string[],
+    identityDocument: '',
+    profilePhotos: [] as string[],
+    identityConfirmed: false,
+  });
+
+  // Validation errors
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    phoneNumber: '',
+    fullName: '',
+    dateOfBirth: '',
+    travelType: '',
+    lookingFor: '',
+    travelStyle: '',
+    bio: '',
+    topDestinations: '',
+    languages: '',
+    identityDocument: '',
+    identityConfirmed: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (field: string, value: string | string[] | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleTravelTypeSelect = (type: string) => {
+    setFormData(prev => ({ ...prev, travelType: type }));
+    if (errors.travelType) {
+      setErrors(prev => ({ ...prev, travelType: '' }));
+    }
+  };
+
+  const handleLookingForSelect = (type: string) => {
+    setFormData(prev => ({
+      ...prev,
+      lookingFor: prev.lookingFor.includes(type)
+        ? prev.lookingFor.filter(t => t !== type)
+        : [...prev.lookingFor, type],
+    }));
+    if (errors.lookingFor) {
+      setErrors(prev => ({ ...prev, lookingFor: '' }));
+    }
+  };
+
+  const handleTravelStyleSelect = (style: string) => {
+    setFormData(prev => ({
+      ...prev,
+      travelStyle: prev.travelStyle.includes(style)
+        ? prev.travelStyle.filter(s => s !== style)
+        : [...prev.travelStyle, style],
+    }));
+    if (errors.travelStyle) {
+      setErrors(prev => ({ ...prev, travelStyle: '' }));
+    }
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
+  };
+
+  const validatePhoneNumber = (phone: string) => {
+    // Simple validation - can be enhanced based on requirements
+    return phone.length >= 10;
+  };
+
+  const validateDateOfBirth = (dob: string) => {
+    // Simple validation - can be enhanced based on requirements
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    return dobRegex.test(dob);
+  };
+
+  const validateStep = (stepNumber: number) => {
+    let isValid = true;
+    const newErrors = { ...errors };
+
+    switch (stepNumber) {
+      case 1:
+        if (activeTab === 'email') {
+          if (!formData.email) {
+            newErrors.email = 'Email is required';
+            isValid = false;
+          } else if (!validateEmail(formData.email)) {
+            newErrors.email = 'Please enter a valid email';
+            isValid = false;
+          }
+
+          if (!formData.password) {
+            newErrors.password = 'Password is required';
+            isValid = false;
+          } else if (!validatePassword(formData.password)) {
+            newErrors.password = 'Password must be at least 6 characters';
+            isValid = false;
+          }
+        } else if (activeTab === 'phone') {
+          if (!formData.phoneNumber) {
+            newErrors.phoneNumber = 'Phone number is required';
+            isValid = false;
+          } else if (!validatePhoneNumber(formData.phoneNumber)) {
+            newErrors.phoneNumber = 'Please enter a valid phone number';
+            isValid = false;
+          }
+        }
+        break;
+
+      case 2:
+        if (!formData.fullName) {
+          newErrors.fullName = 'Full name is required';
+          isValid = false;
+        }
+
+        if (!formData.dateOfBirth) {
+          newErrors.dateOfBirth = 'Date of birth is required';
+          isValid = false;
+        } else if (!validateDateOfBirth(formData.dateOfBirth)) {
+          newErrors.dateOfBirth = 'Please enter a valid date (YYYY-MM-DD)';
+          isValid = false;
+        }
+
+        if (!formData.identityDocument) {
+          newErrors.identityDocument = 'Identity document is required';
+          isValid = false;
+        }
+
+        if (!formData.identityConfirmed) {
+          newErrors.identityConfirmed = 'You must confirm your identity';
+          isValid = false;
+        }
+        break;
+
+      case 3:
+        if (!formData.travelType) {
+          newErrors.travelType = 'Please select your travel type';
+          isValid = false;
+        }
+
+        if (formData.lookingFor.length === 0) {
+          newErrors.lookingFor = 'Please select at least one option';
+          isValid = false;
+        }
+
+        if (formData.travelStyle.length === 0) {
+          newErrors.travelStyle = 'Please select at least one travel style';
+          isValid = false;
+        }
+        break;
+
+      case 4:
+        if (!formData.bio) {
+          newErrors.bio = 'Bio is required';
+          isValid = false;
+        }
+
+        if (formData.topDestinations.length === 0) {
+          newErrors.topDestinations = 'Please add at least one destination';
+          isValid = false;
+        }
+
+        if (formData.languages.length === 0) {
+          newErrors.languages = 'Please add at least one language';
+          isValid = false;
+        }
+        break;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(4)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Register user
+      await register({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        dateOfBirth: formData.dateOfBirth,
+        travelType: formData.travelType,
+        lookingFor: formData.lookingFor,
+        travelStyle: formData.travelStyle,
+      });
+
+      // Update profile with additional information
+      await profileAPI.updateProfile({
+        bio: formData.bio,
+        topDestinations: formData.topDestinations,
+        languages: formData.languages,
+      });
+
+      // Upload identity document if provided
+      if (formData.identityDocument) {
+        await profileAPI.uploadIdentity(formData.identityDocument);
+      }
+
+      // Upload profile photos if provided
+      if (formData.profilePhotos.length > 0) {
+        await profileAPI.uploadPhotos(formData.profilePhotos);
+      }
+
+      // Navigate to dashboard
+      navigation.navigate('Dashboard');
+    } catch (error:any) {
+      Alert.alert('Error', error.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const nextStep = () => {
-    if (step < totalSteps) {
-      setStep(step + 1);
+    if (validateStep(step)) {
+      if (step < totalSteps) {
+        setStep(step + 1);
+      } else {
+        handleSubmit();
+      }
     }
   };
 
@@ -74,18 +321,24 @@ export default function OnboardingPage() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email address</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, errors.email ? styles.inputError : null]}
                     placeholder="Enter your email"
                     keyboardType="email-address"
+                    value={formData.email}
+                    onChangeText={(value) => handleInputChange('email', value)}
                   />
+                  {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
                 </View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Create password</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, errors.password ? styles.inputError : null]}
                     placeholder="Create a secure password"
                     secureTextEntry
+                    value={formData.password}
+                    onChangeText={(value) => handleInputChange('password', value)}
                   />
+                  {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
                 </View>
               </View>
             )}
@@ -95,10 +348,13 @@ export default function OnboardingPage() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Phone number</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, errors.phoneNumber ? styles.inputError : null]}
                     placeholder="+1 (555) 000-0000"
                     keyboardType="phone-pad"
+                    value={formData.phoneNumber}
+                    onChangeText={(value) => handleInputChange('phoneNumber', value)}
                   />
+                  {errors.phoneNumber ? <Text style={styles.errorText}>{errors.phoneNumber}</Text> : null}
                 </View>
                 <Text style={styles.helperText}>
                   We'll send you a verification code
@@ -127,10 +383,16 @@ export default function OnboardingPage() {
               <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={nextStep}
+                disabled={loading}
               >
-                <Text style={styles.primaryButtonText}>Continue</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
-                {/* <Text style={styles.arrowIcon}>→</Text> */}
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Text style={styles.primaryButtonText}>Continue</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                  </>
+                )}
               </TouchableOpacity>
               <Text style={styles.termsText}>
                 By continuing, you agree to our Terms of Service and Privacy Policy
@@ -149,36 +411,57 @@ export default function OnboardingPage() {
               <Text style={styles.uploadText}>
                 Upload a selfie or photo ID
               </Text>
-              <TouchableOpacity style={styles.uploadButton}>
+              <TouchableOpacity 
+                style={[styles.uploadButton, errors.identityDocument ? styles.inputError : null]}
+                onPress={() => {
+                  // Implement file picker here
+                  // For now, just set a dummy URL
+                  handleInputChange('identityDocument', 'https://example.com/id.jpg');
+                }}
+              >
                 <Text style={styles.uploadButtonText}>Choose file</Text>
               </TouchableOpacity>
+              {errors.identityDocument ? <Text style={styles.errorText}>{errors.identityDocument}</Text> : null}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full legal name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.fullName ? styles.inputError : null]}
                 placeholder="As it appears on your ID"
+                value={formData.fullName}
+                onChangeText={(value) => handleInputChange('fullName', value)}
               />
+              {errors.fullName ? <Text style={styles.errorText}>{errors.fullName}</Text> : null}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Date of birth</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Select date"
-                // Add date picker here
+                style={[styles.input, errors.dateOfBirth ? styles.inputError : null]}
+                placeholder="YYYY-MM-DD"
+                value={formData.dateOfBirth}
+                onChangeText={(value) => handleInputChange('dateOfBirth', value)}
               />
+              {errors.dateOfBirth ? <Text style={styles.errorText}>{errors.dateOfBirth}</Text> : null}
             </View>
 
             <View style={styles.checkboxContainer}>
-              <TouchableOpacity style={styles.checkbox}>
-                <Ionicons name="square-outline" size={24} color="#374151" />
+              <TouchableOpacity 
+                style={styles.checkbox}
+                onPress={() => handleInputChange('identityConfirmed', !formData.identityConfirmed)}
+              >
+                {formData.identityConfirmed ? (
+                  <Ionicons name="checkbox" size={24} color="#F43F5E" />
+                ) : (
+                  <Ionicons name="square-outline" size={24} color="#374151" />
+                )}
               </TouchableOpacity>
               <Text style={styles.checkboxLabel}>
                 I confirm this is my real identity and information
               </Text>
             </View>
+            {errors.identityConfirmed ? <Text style={styles.errorText}>{errors.identityConfirmed}</Text> : null}
 
             <View style={styles.cardFooter}>
               <View style={styles.buttonRow}>
@@ -191,8 +474,13 @@ export default function OnboardingPage() {
                 <TouchableOpacity
                   style={[styles.button, styles.primaryButton]}
                   onPress={nextStep}
+                  disabled={loading}
                 >
-                  <Text style={styles.primaryButtonText}>Continue</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Continue</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -209,13 +497,25 @@ export default function OnboardingPage() {
                   (type) => (
                     <TouchableOpacity
                       key={type}
-                      style={styles.preferenceButton}
+                      style={[
+                        styles.preferenceButton,
+                        formData.travelType === type && styles.preferenceButtonActive,
+                      ]}
+                      onPress={() => handleTravelTypeSelect(type)}
                     >
-                      <Text style={styles.preferenceButtonText}>{type}</Text>
+                      <Text 
+                        style={[
+                          styles.preferenceButtonText,
+                          formData.travelType === type && styles.preferenceButtonTextActive,
+                        ]}
+                      >
+                        {type}
+                      </Text>
                     </TouchableOpacity>
                   )
                 )}
               </View>
+              {errors.travelType ? <Text style={styles.errorText}>{errors.travelType}</Text> : null}
             </View>
 
             <View style={styles.preferenceSection}>
@@ -229,12 +529,24 @@ export default function OnboardingPage() {
                 ].map((type) => (
                   <TouchableOpacity
                     key={type}
-                    style={styles.preferenceButton}
+                    style={[
+                      styles.preferenceButton,
+                      formData.lookingFor.includes(type) && styles.preferenceButtonActive,
+                    ]}
+                    onPress={() => handleLookingForSelect(type)}
                   >
-                    <Text style={styles.preferenceButtonText}>{type}</Text>
+                    <Text 
+                      style={[
+                        styles.preferenceButtonText,
+                        formData.lookingFor.includes(type) && styles.preferenceButtonTextActive,
+                      ]}
+                    >
+                      {type}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
+              {errors.lookingFor ? <Text style={styles.errorText}>{errors.lookingFor}</Text> : null}
             </View>
 
             <View style={styles.preferenceSection}>
@@ -250,12 +562,24 @@ export default function OnboardingPage() {
                 ].map((style) => (
                   <TouchableOpacity
                     key={style}
-                    style={styles.preferenceButton}
+                    style={[
+                      styles.preferenceButton,
+                      formData.travelStyle.includes(style) && styles.preferenceButtonActive,
+                    ]}
+                    onPress={() => handleTravelStyleSelect(style)}
                   >
-                    <Text style={styles.preferenceButtonText}>{style}</Text>
+                    <Text 
+                      style={[
+                        styles.preferenceButtonText,
+                        formData.travelStyle.includes(style) && styles.preferenceButtonTextActive,
+                      ]}
+                    >
+                      {style}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
+              {errors.travelStyle ? <Text style={styles.errorText}>{errors.travelStyle}</Text> : null}
             </View>
 
             <View style={styles.cardFooter}>
@@ -269,8 +593,13 @@ export default function OnboardingPage() {
                 <TouchableOpacity
                   style={[styles.button, styles.primaryButton]}
                   onPress={nextStep}
+                  disabled={loading}
                 >
-                  <Text style={styles.primaryButtonText}>Continue</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Continue</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -285,7 +614,17 @@ export default function OnboardingPage() {
                 <Ionicons name="person-outline" size={40} color="#9CA3AF" />
               </View>
               <Text style={styles.uploadText}>Upload profile photos</Text>
-              <TouchableOpacity style={styles.uploadButton}>
+              <TouchableOpacity 
+                style={styles.uploadButton}
+                onPress={() => {
+                  // Implement file picker here
+                  // For now, just set dummy URLs
+                  handleInputChange('profilePhotos', [
+                    'https://example.com/photo1.jpg',
+                    'https://example.com/photo2.jpg',
+                  ]);
+                }}
+              >
                 <Text style={styles.uploadButtonText}>Add photos</Text>
               </TouchableOpacity>
             </View>
@@ -293,11 +632,14 @@ export default function OnboardingPage() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Bio</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, errors.bio ? styles.inputError : null]}
                 placeholder="Tell potential matches about yourself and your travel dreams..."
                 multiline
                 numberOfLines={4}
+                value={formData.bio}
+                onChangeText={(value) => handleInputChange('bio', value)}
               />
+              {errors.bio ? <Text style={styles.errorText}>{errors.bio}</Text> : null}
             </View>
 
             <View style={styles.inputGroup}>
@@ -305,17 +647,23 @@ export default function OnboardingPage() {
                 Top destinations I want to visit:
               </Text>
               <TextInput
-                style={styles.input}
-                placeholder="Add destinations"
+                style={[styles.input, errors.topDestinations ? styles.inputError : null]}
+                placeholder="Add destinations (comma separated)"
+                value={formData.topDestinations.join(', ')}
+                onChangeText={(value) => handleInputChange('topDestinations', value.split(',').map(d => d.trim()))}
               />
+              {errors.topDestinations ? <Text style={styles.errorText}>{errors.topDestinations}</Text> : null}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Languages I speak:</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Add languages"
+                style={[styles.input, errors.languages ? styles.inputError : null]}
+                placeholder="Add languages (comma separated)"
+                value={formData.languages.join(', ')}
+                onChangeText={(value) => handleInputChange('languages', value.split(',').map(l => l.trim()))}
               />
+              {errors.languages ? <Text style={styles.errorText}>{errors.languages}</Text> : null}
             </View>
 
             <View style={styles.cardFooter}>
@@ -328,9 +676,14 @@ export default function OnboardingPage() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.button, styles.primaryButton]}
-                  onPress={() => navigation.navigate('Dashboard')}
+                  onPress={handleSubmit}
+                  disabled={loading}
                 >
-                  <Text style={styles.primaryButtonText}>Complete Profile</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Complete Profile</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -351,7 +704,7 @@ export default function OnboardingPage() {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-               <ArrowLeft {...({ size: 24, color: "#4B5563" } as LucideProps)} />
+              <Ionicons name="arrow-back-outline" size={20} color="#4B5563" />
               <Text style={styles.backButtonText}>Back to home</Text>
             </TouchableOpacity>
 
@@ -380,6 +733,12 @@ export default function OnboardingPage() {
               {step === 3 && 'Tell us about your travel style'}
               {step === 4 && 'Set up your profile details'}
             </Text>
+
+            {authError && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{authError}</Text>
+              </View>
+            )}
 
             {renderStepContent()}
           </View>
@@ -496,6 +855,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: '#EF4444',
   },
   textArea: {
     height: 100,
@@ -629,8 +991,28 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'flex-start',
   },
+  preferenceButtonActive: {
+    borderColor: '#F43F5E',
+    backgroundColor: '#FEF2F2',
+  },
   preferenceButtonText: {
     color: '#374151',
+    fontSize: 14,
+  },
+  preferenceButtonTextActive: {
+    color: '#F43F5E',
+    fontWeight: '600',
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#DC2626',
     fontSize: 14,
   },
 });

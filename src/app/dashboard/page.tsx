@@ -8,19 +8,17 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Image,
   SafeAreaView,
   Platform,
   FlatList,
 } from 'react-native';
 import  LinearGradient  from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { verticalScale } from 'react-native-size-matters';
 
 export default function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('discover');
-  const navigation = useNavigation();
 
   const mockProfiles = [
     {
@@ -228,25 +226,6 @@ export default function DashboardPage() {
             'Create or join a trip to start your adventure',
             'Plan a Trip'
           )}
-      </View>
-
-      <View style={styles.bottomNavigation}>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="home" size={24} color="#F43F5E" />
-          <Text style={[styles.navText, styles.activeNavText]}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="search" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Explore</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="chatbubbles" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Messages</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="person" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -502,7 +481,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    height: '78%',
+    height: Platform.OS==='ios'?verticalScale(340):verticalScale(430),
     justifyContent: 'center',
     backgroundColor: '#fff',
   },
@@ -537,25 +516,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
-  },
-  bottomNavigation: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#fff',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-  },
-  navButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: 8,
-  },
-  navText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  activeNavText: {
-    color: '#F43F5E',
   },
 });
