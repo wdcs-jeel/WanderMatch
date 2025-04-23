@@ -73,7 +73,14 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string | string[] | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Handle array fields (destinations and languages)
+    if (field === 'topDestinations' || field === 'languages') {
+      const values = typeof value === 'string' ? value.split(',').map(item => item.trim()) : value;
+      setFormData(prev => ({ ...prev, [field]: values }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+    
     // Clear error when user starts typing
     if (errors[field as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -321,6 +328,7 @@ export default function OnboardingPage() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email address</Text>
                   <TextInput
+                    testID="email-input"
                     style={[styles.input, errors.email ? styles.inputError : null]}
                     placeholder="Enter your email"
                     keyboardType="email-address"
@@ -332,6 +340,7 @@ export default function OnboardingPage() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Create password</Text>
                   <TextInput
+                    testID="password-input"
                     style={[styles.input, errors.password ? styles.inputError : null]}
                     placeholder="Create a secure password"
                     secureTextEntry
@@ -348,6 +357,7 @@ export default function OnboardingPage() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Phone number</Text>
                   <TextInput
+                    testID="phone-input"
                     style={[styles.input, errors.phoneNumber ? styles.inputError : null]}
                     placeholder="+1 (555) 000-0000"
                     keyboardType="phone-pad"
@@ -427,6 +437,7 @@ export default function OnboardingPage() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full legal name</Text>
               <TextInput
+                testID="full-name-input"
                 style={[styles.input, errors.fullName ? styles.inputError : null]}
                 placeholder="As it appears on your ID"
                 value={formData.fullName}
@@ -438,6 +449,7 @@ export default function OnboardingPage() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Date of birth</Text>
               <TextInput
+                testID="date-of-birth-input"
                 style={[styles.input, errors.dateOfBirth ? styles.inputError : null]}
                 placeholder="YYYY-MM-DD"
                 value={formData.dateOfBirth}
@@ -502,6 +514,7 @@ export default function OnboardingPage() {
                         formData.travelType === type && styles.preferenceButtonActive,
                       ]}
                       onPress={() => handleTravelTypeSelect(type)}
+                      testID={`travel-type-${type.toLowerCase().replace(' ', '-')}`}
                     >
                       <Text 
                         style={[
@@ -534,6 +547,7 @@ export default function OnboardingPage() {
                       formData.lookingFor.includes(type) && styles.preferenceButtonActive,
                     ]}
                     onPress={() => handleLookingForSelect(type)}
+                    testID={`looking-for-${type.toLowerCase().replace(' ', '-')}`}
                   >
                     <Text 
                       style={[
@@ -594,6 +608,7 @@ export default function OnboardingPage() {
                   style={[styles.button, styles.primaryButton]}
                   onPress={nextStep}
                   disabled={loading}
+                  testID="continue-button"
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />
@@ -632,6 +647,7 @@ export default function OnboardingPage() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Bio</Text>
               <TextInput
+                testID="bio-input"
                 style={[styles.input, styles.textArea, errors.bio ? styles.inputError : null]}
                 placeholder="Tell potential matches about yourself and your travel dreams..."
                 multiline
@@ -647,6 +663,7 @@ export default function OnboardingPage() {
                 Top destinations I want to visit:
               </Text>
               <TextInput
+                testID="destinations-input"
                 style={[styles.input, errors.topDestinations ? styles.inputError : null]}
                 placeholder="Add destinations (comma separated)"
                 value={formData.topDestinations.join(', ')}
@@ -658,6 +675,7 @@ export default function OnboardingPage() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Languages I speak:</Text>
               <TextInput
+                testID="languages-input"
                 style={[styles.input, errors.languages ? styles.inputError : null]}
                 placeholder="Add languages (comma separated)"
                 value={formData.languages.join(', ')}
@@ -678,6 +696,7 @@ export default function OnboardingPage() {
                   style={[styles.button, styles.primaryButton]}
                   onPress={handleSubmit}
                   disabled={loading}
+                  testID="complete-profile-button"
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 export default function ExploreScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Explore Screen</Text>
+      <Text testID="hello-text" style={styles.text}>ExploreScreen</Text>
     </View>
   );
 }
