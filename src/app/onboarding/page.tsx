@@ -462,6 +462,7 @@ export default function OnboardingPage() {
               <TouchableOpacity 
                 style={styles.checkbox}
                 onPress={() => handleInputChange('identityConfirmed', !formData.identityConfirmed)}
+                testID='identity-confirm-checkbox'
               >
                 {formData.identityConfirmed ? (
                   <Ionicons name="checkbox" size={24} color="#F43F5E" />
@@ -514,7 +515,7 @@ export default function OnboardingPage() {
                         formData.travelType === type && styles.preferenceButtonActive,
                       ]}
                       onPress={() => handleTravelTypeSelect(type)}
-                      testID={`travel-type-${type.toLowerCase().replace(' ', '-')}`}
+                      testID={`travel-type-${type.toLowerCase().replace(/ /g, '-')}`}
                     >
                       <Text 
                         style={[
@@ -608,7 +609,7 @@ export default function OnboardingPage() {
                   style={[styles.button, styles.primaryButton]}
                   onPress={nextStep}
                   disabled={loading}
-                  testID="continue-button"
+                  // testID="continue-button"
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />

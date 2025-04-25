@@ -97,8 +97,7 @@ export default function LoginPage() {
       await login({ email, password });
       navigation.navigate("MainApp");
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Invalid email or password. Please try again.");
+      setError( "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
