@@ -8,23 +8,25 @@ import OnboardingPage from './src/app/onboarding/page';
 import ForgotPasswordPage from './src/app/forgot-password/page';
 import HomePage from './src/app/page';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import EditProfilePage from './src/app/profile/edit/page';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
-    <NavigationContainer>
-      <AuthProvider>
-        <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home" component={HomePage} />
-          <Stack.Screen name="Login" component={LoginPage} />
-          <Stack.Screen name="Onboarding" component={OnboardingPage} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
-          <Stack.Screen name="MainApp" component={BottomTabNavigator} />
-        </Stack.Navigator>
-      </AuthProvider>
-    </NavigationContainer>
+      <NavigationContainer>
+        <AuthProvider>
+          <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Home" component={HomePage} />
+            <Stack.Screen name="Login" component={LoginPage} />
+            <Stack.Screen name="Onboarding" component={OnboardingPage} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
+            <Stack.Screen name="EditProfile" component={EditProfilePage} />
+            <Stack.Screen name="MainApp" component={BottomTabNavigator} />
+          </Stack.Navigator>
+        </AuthProvider>
+      </NavigationContainer>
     </SafeAreaView>
   );
 }

@@ -31,7 +31,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 export default function LoginPage() {
   const navigation = useNavigation<NavigationProp>()
-  const { login } = useAuth();
+  const { login, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,10 +94,16 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError("");
+      
       await login({ email, password });
-      navigation.navigate("MainApp");
+      console.log('Login successful, navigating to MainApp');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainApp' }],
+      });
     } catch (err: any) {
-      setError( "Invalid email or password. Please try again.");
+      console.error('Login error:', err);
+      setError(err.message || "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }

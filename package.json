@@ -30,8 +30,9 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
+    "@bam.tech/react-native-make": "^3.0.3",
     "@react-native-community/cli": "18.0.0",
-    "@react-native-community/cli-platform-android": "18.0.0",
+    "@react-native-community/cli-platform-android": "^18.0.0",
     "@react-native-community/cli-platform-ios": "18.0.0",
     "@react-native/babel-preset": "0.79.1",
     "@react-native/eslint-config": "0.79.1",
@@ -47,6 +48,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "2.8.8",
     "react-test-renderer": "^19.0.0",
+    "sharp": "^0.34.1",
     "typescript": "5.0.4"
   },
   "engines": {

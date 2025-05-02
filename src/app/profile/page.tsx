@@ -26,7 +26,8 @@ type RootStackParamList = {
     Profile: undefined;
     Dashboard: undefined;
     Login: undefined;
-  };
+    EditProfile: undefined;
+};
   
   type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 export default function ProfilePage() {
@@ -48,7 +49,11 @@ export default function ProfilePage() {
           onPress: async () => {
             try {
               await logout();
-              navigation.navigate('Login');
+              console.log('Logout successful, navigating to Login');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
@@ -67,6 +72,9 @@ export default function ProfilePage() {
      />
    </View>
  );
+ const handleEditProfile = () => {
+  navigation.navigate('EditProfile');
+};
 
  const renderTripItem = ({ item, index }:any) => (
    <View style={styles.tripCard}>
@@ -181,7 +189,7 @@ export default function ProfilePage() {
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back-outline" size={20} color="black" />
-          <Text style={styles.backButtonText}>Back</Text>
+          {/* <Text style={styles.backButtonText}>Back</Text> */}
         </TouchableOpacity>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.iconButton}>
@@ -212,24 +220,25 @@ export default function ProfilePage() {
           <View style={styles.nameContainer}>
             <Text style={styles.name}>{user?.fullName || 'Traveler'}</Text>
             <View style={styles.verifiedBadge}>
-              {/* Shield icon */}
               <Ionicons name="shield-checkmark-outline" size={20} color="black" />
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
           </View>
 
           <View style={styles.locationContainer}>
-            {/* MapPin icon */}
             <Ionicons name="location-outline" size={20} color="black" />
             <Text style={styles.locationText}>San Francisco, California</Text>
           </View>
-
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={[styles.button, styles.editButton]}>
-              {/* Edit icon */}
+          <TouchableOpacity 
+              style={[styles.button, styles.editButton]}
+              onPress={handleEditProfile}
+            >
               <Ionicons name="create-outline" size={24} color="black" />
               <Text style={styles.editButtonText}>Edit Profile</Text>
             </TouchableOpacity>
+
+         
             <TouchableOpacity style={[styles.button, styles.messageButton]}>
               {/* MessageCircle icon */}
               <Ionicons name="chatbubbles" size={24} color="white" />
@@ -464,16 +473,6 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(8),
     borderRadius: scale(20),
     gap: scale(8),
-  },
-  editButton: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#fff',
-  },
-  editButtonText: {
-    color: '#374151',
-    fontSize: moderateScale(14),
-    fontWeight: '600',
   },
   messageButton: {
     backgroundColor: '#F43F5E',
@@ -815,4 +814,15 @@ const styles = StyleSheet.create({
     color: '#F43F5E',
     fontWeight: '600',
   },
+  editButton: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#fff',
+  },
+  editButtonText: {
+    color: '#374151',
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+  },
+
 });

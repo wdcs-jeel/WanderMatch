@@ -19,28 +19,34 @@ const userSchema = new mongoose.Schema({
     sparse: true
   },
   
-  // Identity verification
+  // Basic Information
   fullName: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   dateOfBirth: {
-    type: Date,
-    required: true
+    type: Date
   },
-  identityVerified: {
-    type: Boolean,
-    default: false
+  
+  // Profile details
+  bio: {
+    type: String,
+    trim: true
   },
-  identityDocument: {
-    type: String // URL to stored document
+  location: {
+    type: String,
+    trim: true
   },
+  interests: [{
+    type: String,
+    trim: true
+  }],
   
   // Travel preferences
   travelType: {
     type: String,
-    enum: ['Solo Traveler', 'Group Seeker', 'Travel Funder', 'Nomad'],
-    required: true
+    enum: ['Solo Traveler', 'Group Seeker', 'Travel Funder', 'Nomad']
   },
   lookingFor: [{
     type: String,
@@ -50,17 +56,25 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['Luxury', 'Budget', 'Adventure', 'Cultural', 'Relaxation', 'Foodie']
   }],
-  
-  // Profile details
-  bio: {
-    type: String
-  },
   topDestinations: [{
-    type: String
+    type: String,
+    trim: true
   }],
   languages: [{
-    type: String
+    type: String,
+    trim: true
   }],
+  
+  // Verification
+  identityVerified: {
+    type: Boolean,
+    default: false
+  },
+  identityDocument: {
+    type: String // URL to stored document
+  },
+  
+  // Media
   profilePhotos: [{
     type: String // URLs to stored photos
   }],
