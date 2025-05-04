@@ -10,6 +10,10 @@ dotenv.config();
 
 // Create Express app
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
 
 // Middleware
 app.use(cors());
@@ -23,9 +27,23 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+io.on('connection', (socket) => {
+  console.log('a user connected');
+    socket.on("send msg",(data)=>{
+        //for broadcasting (io.emit)
+        //emit the event from the server to the rest of the users.
+        console.log('receive msg',data);
+        io.emit('received msg', data);      
+        
+    })
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-}); 
+server.listen(3000, () => {
+  console.log('listening on http://localhost:3000');
+});

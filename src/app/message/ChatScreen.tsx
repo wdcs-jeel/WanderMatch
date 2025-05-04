@@ -14,18 +14,14 @@ import {
 } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import SocketService from '../../services/SocketService';
 
-interface Message {
-  id: string;
+type ChatMessage = {
   text: string;
-  sender: {
-    id: string;
-    name: string;
-  };
-  timestamp: string;
   isMine: boolean;
-  status?: 'sent' | 'delivered' | 'read';
-}
+  status: 'sent' | 'delivered' | 'read';
+  timestamp: string; // ISO or formatted string
+};
 
 interface ChatScreenProps {
   recipient: {
@@ -41,14 +37,9 @@ interface ChatScreenProps {
 }
 
 export default function ChatScreen({ recipient, onBack, ws, userId, userName }: ChatScreenProps) {
-  const [messages, setMessages] = useState<Message[]>([
+  const [data, setData] = useState<ChatMessage[]>([
     {
-      id: '1',
       text: "Hi there! How can I help you today?",
-      sender: {
-        id: recipient.id.toString(),
-        name: recipient.name
-      },
       timestamp: new Date().toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
@@ -57,12 +48,7 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
       status: 'delivered' as const
     },
     {
-      id: '2',
       text: "I'm interested in learning more about your services.",
-      sender: {
-        id: userId,
-        name: userName
-      },
       timestamp: new Date().toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
@@ -71,12 +57,7 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
       status: 'delivered' as const
     },
     {
-      id: '3',
       text: "Great! I'd be happy to tell you more. What specific aspects are you interested in?",
-      sender: {
-        id: recipient.id.toString(),
-        name: recipient.name
-      },
       timestamp: new Date().toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
@@ -90,136 +71,43 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
   const [isConnected, setIsConnected] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    if (ws) {
-      const handleMessage = (event: WebSocketMessageEvent) => {
-        try {
-          const receivedMessage = JSON.parse(event.data as string);
-          console.log('ChatScreen received:', receivedMessage);
+  useEffect(()=>{
+    SocketService.initializeSocket()
+  },[]);
 
-          switch (receivedMessage.type) {
-            case 'join':
-              console.log(`User ${receivedMessage.name} joined the chat`);
-              setConnectedUsers(prev => new Set(prev).add(receivedMessage.userId));
-              break;
-
-            case 'chat':
-              const isMine = receivedMessage.userId === userId;
-              const isFromCurrentRecipient = receivedMessage.userId === recipient.id.toString();
-              
-              if (isMine || isFromCurrentRecipient) {
-                const newMessage: Message = {
-                  id: Date.now().toString(),
-                  text: receivedMessage.text,
-                  sender: {
-                    id: receivedMessage.userId,
-                    name: receivedMessage.name
-                  },
-                  timestamp: new Date().toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  }),
-                  isMine,
-                  status: isMine ? 'sent' as const : 'delivered' as const
-                };
-                
-                setMessages(prev => [...prev, newMessage]);
-              }
-              break;
-
-            case 'leave':
-              console.log(`User ${receivedMessage.name} left the chat`);
-              setConnectedUsers(prev => {
-                const updated = new Set(prev);
-                updated.delete(receivedMessage.userId);
-                return updated;
-              });
-              break;
-          }
-        } catch (error) {
-          console.log('Error processing message:', error);
-        }
+  useEffect(()=>{
+    SocketService.on('received msg', (msg) => {
+      const isMine = msg.userId === userId;
+      const newMsg: ChatMessage = {
+        text: msg.text,
+        isMine,
+        status: isMine ? 'sent' : 'delivered',
+        timestamp: msg.timestamp || new Date().toISOString()
       };
-
-      ws.onmessage = handleMessage;
-
-      // Check initial connection state
-      setIsConnected(ws.readyState === WebSocket.OPEN);
-
-      // Add connection state listeners
-      ws.onopen = () => {
-        console.log('ChatScreen: WebSocket connected');
-        setIsConnected(true);
-        // Send join message when connected
-        const joinMessage = {
-          type: 'join',
-          userId: userId,
-          name: userName,
-          timestamp: new Date().toISOString()
-        };
-        ws.send(JSON.stringify(joinMessage));
-      };
-
-      ws.onclose = () => {
-        console.log('ChatScreen: WebSocket disconnected');
-        setIsConnected(false);
-      };
-
-      ws.onerror = (error) => {
-        console.log('ChatScreen: WebSocket error:', error);
-        setIsConnected(false);
-      };
-
-      return () => {
-        ws.onmessage = null;
-        ws.onopen = null;
-        ws.onclose = null;
-        ws.onerror = null;
-      };
-    }
-  }, [ws, userId, userName, recipient.id]);
-
+      setData(prev => [...prev, newMsg]); // ✅ always works with latest state
+      console.log('msg received in react-native', msg);
+    });
+  
+    // Optional: clean up listener on unmount
+    return () => {
+      SocketService.removeListener('received msg');
+    };
+  },[])
   const sendMessage = () => {
-    if (inputMessage.trim() && ws?.readyState === WebSocket.OPEN) {
-      const messageId = Date.now().toString();
-      const messageData = {
-        type: 'chat',
-        messageId,
-        userId: userId,
-        name: userName,
+    if(!!inputMessage){
+      const newMessage: ChatMessage = {
         text: inputMessage,
-        timestamp: new Date().toISOString(),
-        recipient: recipient.id,
-        broadcast: true
+        isMine: true,
+        status: 'sent',
+        timestamp: new Date().toISOString()
       };
-
-      try {
-        console.log('Broadcasting message:', messageData);
-        ws.send(JSON.stringify(messageData));
-
-        const newMessage: Message = {
-          id: messageId,
-          text: inputMessage,
-          sender: {
-            id: userId,
-            name: userName
-          },
-          timestamp: new Date().toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          isMine: true,
-          status: 'sent' as const
-        };
-
-        setMessages(prev => [...prev, newMessage]);
-        setInputMessage('');
-      } catch (error) {
-        console.log('Error sending message:', error);
-        Alert.alert('Error', 'Failed to send message. Please try again.');
-      }
-    } else {
-      Alert.alert('Connection Error', 'Unable to send message. Please check your connection.');
+      SocketService.emit('send msg',{
+        text: inputMessage,
+        userId, // Include sender info
+        timestamp: newMessage.timestamp
+      });
+      setInputMessage('')
+      return
     }
   };
 
@@ -277,9 +165,9 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
         style={styles.messagesContainer}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
-        {messages.map((message) => (
+        {data.map((message) => (
           <View
-            key={message.id}
+            // key={message.id}
             style={[
               styles.messageWrapper,
               message.isMine ? styles.myMessageWrapper : styles.theirMessageWrapper
@@ -300,7 +188,7 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
               ]}>
                 {message.text}
               </Text>
-              <View style={styles.messageFooter}>
+              {/* <View style={styles.messageFooter}>
                 <Text style={[
                   styles.messageTime,
                   message.isMine ? styles.myMessageTime : styles.theirMessageTime
@@ -312,7 +200,7 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
                     {message.status === 'delivered' ? '✓✓' : '✓'}
                   </Text>
                 )}
-              </View>
+              </View> */}
             </View>
           </View>
         ))}
