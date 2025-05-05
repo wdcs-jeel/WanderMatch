@@ -34,7 +34,8 @@ export default function ProfilePage() {
  const navigation = useNavigation<NavigationProp>();
  const { user, logout } = useAuth();
  console.log('Profile - Current user:', user);
- const [activeTab, setActiveTab] = useState('Photos');
+ const [activeTab, setActiveTab] = useState('Trips');
+ const [numColumns, setNumColumns] = useState(3);
  const handleLogout = async () => {
     Alert.alert(
       "Logout",
@@ -66,9 +67,9 @@ export default function ProfilePage() {
  const renderPhotoItem = ({ item, index }:any) => (
    <View style={styles.photoItem}>
      <Image
-       source={{ uri: `/placeholder.svg?height=150&width=150` }}
+       source={{ uri: item }}
        style={styles.photoImage}
-       resizeMode="cover"
+       resizeMode='center'
      />
    </View>
  );
@@ -81,7 +82,7 @@ export default function ProfilePage() {
      <View style={styles.tripCardContent}>
        <View style={styles.tripImageContainer}>
          <Image
-           source={{ uri: `/placeholder.svg?height=80&width=80` }}
+           source={{ uri: `https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg` }}
            style={styles.tripImage}
            resizeMode="cover"
          />
@@ -109,7 +110,7 @@ export default function ProfilePage() {
      <View style={styles.reviewHeader}>
        <View style={styles.reviewerAvatar}>
          <Image
-           source={{ uri: `/placeholder.svg?height=40&width=40` }}
+           source={{ uri: `https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg` }}
            style={styles.avatarImage}
            resizeMode="cover"
          />
@@ -133,16 +134,27 @@ export default function ProfilePage() {
      <Text style={styles.reviewText}>{item.text}</Text>
    </View>
  );
-
+ const photoUrls = [
+  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
+  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
+  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
+  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
+  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
+  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
+  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
+  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
+  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
+];
  const renderTabContent = () => {
    if (activeTab === 'Photos') {
      return (
        <View style={styles.tabContent}>
          <FlatList
-           data={[...Array(9)]}
+         key={`cols-${numColumns}`} 
+           data={photoUrls}
            renderItem={renderPhotoItem}
            keyExtractor={(item, index) => index.toString()}
-           numColumns={3}
+           numColumns={numColumns}
            columnWrapperStyle={styles.photoRow}
            scrollEnabled={false}
          />

@@ -167,7 +167,7 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
       >
         {data.map((message) => (
           <View
-            // key={message.id}
+            key={Math.random()}
             style={[
               styles.messageWrapper,
               message.isMine ? styles.myMessageWrapper : styles.theirMessageWrapper

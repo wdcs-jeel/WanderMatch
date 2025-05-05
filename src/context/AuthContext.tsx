@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // API configuration
-const API_BASE_URL = Platform.OS === 'ios' ? 'http://localhost:5000/api' : 'http://10.0.2.2:5000/api';
+const API_BASE_URL = 'http://192.168.109.128:3000/api';
 
 export interface User {
   _id: string;
