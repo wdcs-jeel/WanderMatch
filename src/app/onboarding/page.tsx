@@ -25,6 +25,7 @@ type RootStackParamList = {
   Home: undefined
   Dashboard: undefined
   Onboarding: undefined
+  MainApp:undefined
 }
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
@@ -272,7 +273,7 @@ export default function OnboardingPage() {
       }
 
       // Navigate to dashboard
-      navigation.navigate('Dashboard');
+      navigation.navigate('MainApp');
     } catch (error:any) {
       Alert.alert('Error', error.message || 'Failed to create account');
     } finally {

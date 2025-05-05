@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'http://10.0.2.2:3000'; // fixed typo from "loacalhost"
+const SOCKET_URL = 'http://192.168.109.128:3000'; // fixed typo from "loacalhost"
 
 class WSService {
   private socket: Socket | null = null;
