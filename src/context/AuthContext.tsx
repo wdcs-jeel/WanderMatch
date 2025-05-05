@@ -35,6 +35,18 @@ export interface AuthContextType {
   login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<void>;
+  register: (userData: {
+    email: string;
+    password: string;
+    fullName: string;
+    dateOfBirth: string;
+    travelType: string;
+    lookingFor: string[];
+    travelStyle: string[];
+    bio: string;
+    languages: string[];
+  }) => Promise<void>;
+  error: string | null;
 }
 
 const initialState: AuthState = {
@@ -49,6 +61,8 @@ export const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
+  register: async () => {},
+  error: null,
 });
 
 export const useAuth = () => {
@@ -61,6 +75,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>(initialState);
+  const [error, setError] = useState<string | null>(null);
 
   // Initialize auth state from storage
   useEffect(() => {
@@ -207,13 +222,97 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [state.token, state.user]);
 
+  const register = useCallback(async (userData: {
+    email: string;
+    password: string;
+    fullName: string;
+    dateOfBirth: string;
+    travelType: string;
+    lookingFor: string[];
+    travelStyle: string[];
+    bio: string;
+    languages: string[];
+  }) => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    setError(null);
+    try {
+      console.log('Starting registration process...');
+      
+      // Format arrays as comma-separated strings
+      const requestData = {
+        email: userData.email,
+        password: userData.password,
+        fullName: userData.fullName,
+        dateOfBirth: userData.dateOfBirth,
+        travelType: userData.travelType,
+        lookingFor: Array.isArray(userData.lookingFor) ? userData.lookingFor.join(',') : '',
+        travelStyle: Array.isArray(userData.travelStyle) ? userData.travelStyle.join(',') : '',
+        bio: userData.bio || '',
+        languages: Array.isArray(userData.languages) ? userData.languages.join(',') : '',
+      };
+
+      // Log the formatted request data
+      console.log('Formatted request data:', JSON.stringify(requestData, null, 2));
+
+      // Make the API request
+      console.log('Making registration request to:', `${API_BASE_URL}/auth/register`);
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+      
+      // Log the response status
+      console.log('Response status:', response.status);
+      
+      // Get the response data
+      const data = await response.json();
+      console.log('Response data:', JSON.stringify(data, null, 2));
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      if (!data.token || !data.user) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // First update AsyncStorage
+      await AsyncStorage.setItem('userToken', data.token);
+      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+      
+      // Then update state
+      setState({
+        user: data.user,
+        token: data.token,
+        isLoading: false,
+      });
+
+      console.log('Registration successful, user:', data.user);
+    } catch (error: any) {
+      console.error('Registration error details:', {
+        message: error.message,
+        error: error,
+        stack: error.stack
+      });
+      setState(prev => ({ ...prev, isLoading: false }));
+      setError(error.message || 'Failed to register');
+      throw new Error(error.message || 'Failed to register');
+    }
+  }, []);
+
   const value = React.useMemo(() => ({
     user: state.user,
     isLoading: state.isLoading,
     login,
     logout,
     updateProfile,
-  }), [state.user, state.isLoading, login, logout, updateProfile]);
+    register,
+    error,
+  }), [state.user, state.isLoading, login, logout, updateProfile, register, error]);
 
   return (
     <AuthContext.Provider value={value}>

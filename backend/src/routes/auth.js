@@ -11,8 +11,24 @@ router.post('/register', [
   body('fullName').notEmpty(),
   body('dateOfBirth').isISO8601(),
   body('travelType').isIn(['Solo Traveler', 'Group Seeker', 'Travel Funder', 'Nomad']),
-  body('lookingFor').isArray(),
-  body('travelStyle').isArray()
+  body('lookingFor').custom((value) => {
+    // Handle both array and string formats
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    return false;
+  }),
+  body('travelStyle').custom((value) => {
+    // Handle both array and string formats
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    return false;
+  }),
+  body('languages').custom((value) => {
+    // Handle both array and string formats
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    return false;
+  })
 ], async (req, res) => {
   try {
     // Check for validation errors
@@ -34,6 +50,20 @@ router.post('/register', [
       languages
     } = req.body;
 
+    // Convert string arrays to actual arrays if needed
+    const formattedData = {
+      email,
+      password,
+      fullName,
+      dateOfBirth,
+      travelType,
+      lookingFor: Array.isArray(lookingFor) ? lookingFor : lookingFor.split(',').map(item => item.trim()),
+      travelStyle: Array.isArray(travelStyle) ? travelStyle : travelStyle.split(',').map(item => item.trim()),
+      bio,
+      topDestinations: Array.isArray(topDestinations) ? topDestinations : (topDestinations ? topDestinations.split(',').map(item => item.trim()) : []),
+      languages: Array.isArray(languages) ? languages : languages.split(',').map(item => item.trim())
+    };
+
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
@@ -41,18 +71,7 @@ router.post('/register', [
     }
 
     // Create new user
-    user = new User({
-      email,
-      password,
-      fullName,
-      dateOfBirth,
-      travelType,
-      lookingFor,
-      travelStyle,
-      bio,
-      topDestinations,
-      languages
-    });
+    user = new User(formattedData);
 
     // Save user to database
     await user.save();

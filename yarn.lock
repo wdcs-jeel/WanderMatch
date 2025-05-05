@@ -6376,6 +6376,11 @@ react-is@^19.0.0:
   resolved "https://registry.npmjs.org/react-is/-/react-is-19.1.0.tgz"
   integrity sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg==
 
+react-native-image-picker@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.npmjs.org/react-native-image-picker/-/react-native-image-picker-8.2.0.tgz"
+  integrity sha512-jIGllQJuJIn0YKss/JEeb0Kos1HSsnIpU+i3bYxR27sOxSyDZQyP9dKR22olssQPlfH+rGNR/Jc6xKRkhm48vw==
+
 react-native-linear-gradient@^2.8.3:
   version "2.8.3"
   resolved "https://registry.npmjs.org/react-native-linear-gradient/-/react-native-linear-gradient-2.8.3.tgz"

@@ -25,6 +25,7 @@ type RootStackParamList = {
   Home: undefined
   Dashboard: undefined
   Onboarding: undefined
+  MainApp: undefined
 }
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
@@ -243,23 +244,39 @@ export default function OnboardingPage() {
     try {
       setLoading(true);
       
-      // Register user
-      await register({
+      // Log the raw form data
+      console.log('Raw form data:', formData);
+      
+      // Ensure arrays are properly formatted and log each field
+      const registrationData = {
         email: formData.email,
         password: formData.password,
         fullName: formData.fullName,
         dateOfBirth: formData.dateOfBirth,
         travelType: formData.travelType,
-        lookingFor: formData.lookingFor,
-        travelStyle: formData.travelStyle,
-      });
+        lookingFor: Array.isArray(formData.lookingFor) ? formData.lookingFor : [],
+        travelStyle: Array.isArray(formData.travelStyle) ? formData.travelStyle : [],
+        bio: formData.bio || '',
+        languages: Array.isArray(formData.languages) ? formData.languages : [],
+      };
+
+      // Log each array field separately
+      console.log('lookingFor array:', registrationData.lookingFor);
+      console.log('travelStyle array:', registrationData.travelStyle);
+      console.log('languages array:', registrationData.languages);
+      
+      // Log the final registration data
+      console.log('Final registration data:', JSON.stringify(registrationData, null, 2));
+      
+      // Register user with all required data
+      await register(registrationData);
 
       // Update profile with additional information
-      await profileAPI.updateProfile({
-        bio: formData.bio,
-        topDestinations: formData.topDestinations,
-        languages: formData.languages,
-      });
+      const profileData = {
+        topDestinations: Array.isArray(formData.topDestinations) ? formData.topDestinations : [],
+      };
+      console.log('Profile update data:', profileData);
+      await profileAPI.updateProfile(profileData);
 
       // Upload identity document if provided
       if (formData.identityDocument) {
@@ -272,8 +289,13 @@ export default function OnboardingPage() {
       }
 
       // Navigate to dashboard
-      navigation.navigate('Dashboard');
+      navigation.navigate('MainApp');
     } catch (error:any) {
+      console.error('Registration error details:', {
+        message: error.message,
+        error: error,
+        stack: error.stack
+      });
       Alert.alert('Error', error.message || 'Failed to create account');
     } finally {
       setLoading(false);
