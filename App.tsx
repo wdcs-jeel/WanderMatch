@@ -9,6 +9,7 @@ import ForgotPasswordPage from './src/app/forgot-password/page';
 import HomePage from './src/app/page';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EditProfilePage from './src/app/profile/edit/page';
+import AddTripDataPage from './src/app/explore/add/AddTripDataPage'
 
 const Stack = createNativeStackNavigator();
 
@@ -22,6 +23,7 @@ export default function App() {
             <Stack.Screen name="Login" component={LoginPage} />
             <Stack.Screen name="Onboarding" component={OnboardingPage} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
+            <Stack.Screen name="AddTrip" component={AddTripDataPage} />
             <Stack.Screen name="EditProfile" component={EditProfilePage} />
             <Stack.Screen name="MainApp" component={BottomTabNavigator} />
           </Stack.Navigator>
