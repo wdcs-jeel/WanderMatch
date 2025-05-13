@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
+const placeRoutes = require('./routes/place');
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +28,8 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/sync',placeRoutes);
+
 io.on('connection', (socket) => {
   console.log('a user connected');
     socket.on("send msg",(data)=>{

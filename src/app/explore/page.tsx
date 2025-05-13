@@ -1,44 +1,155 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button, FlatList, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, Alert } from 'react-native';
 import Realm from 'realm';
 import { travelSchema } from '../../utils/realm/AddTripRealmSchema';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { moderateScale, scale } from 'react-native-size-matters';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Swipeable } from 'react-native-gesture-handler';
 type RootStackParamList = {
   AddTrip:undefined
 };
+interface User {
+  _id: string;
+}
 type Place = {
   _id: number,
   placeName: 'string',
   experience: 'string',
   travelWith: 'string',
-  travelBy : 'string'
+  travelBy : 'string',
+  userId : 'string'
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function ExploreScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [place, setPlace] = useState<Place[]>([]);
-
- 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] }).then(r => {
-        const results = r.objects<Place>('Place');
-        console.log('Stored places:', JSON.stringify(results));
-        setPlace([...results]);
-      });
-    });
-    return unsubscribe;
-  }, [navigation]);
-  
+  const [realmPlaces, setRealmPlaces] = useState<Place[]>([]);
+  const [serverPlaces, setServerPlaces] = useState<Place[]>([]);
+  const [source, setSource] = useState<'realm' | 'server'>('realm');
+  const [user, setUser] = useState<User | null>(null);
   useEffect(()=>{
-    console.log("place"+JSON.stringify(place));
-  },[place])
+    const getUserId = async() => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('userData');
+        if (jsonValue != null) {
+          const parsedUser = JSON.parse(jsonValue);
+          console.log("--parsed",parsedUser)
+          setUser(parsedUser); // set user object in state
+        }
+      } catch (e) {
+        console.error('Failed to fetch user data', e);
+      }
+    }
+    getUserId();
+  },[])
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user && user._id) {
+        loadRealmPlaces(user._id);
+      }
+    }, [user])
+  );
   const addTripDetail = () =>{
     navigation.navigate('AddTrip')
+  }
+  const loadRealmPlaces = async (userId: any) => {
+    console.log("iinside ralm",userId)
+      Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] }).then(r => {
+        const results = r.objects<Place>('Place').filtered('userId == $0', userId);
+        console.log('Stored places:', JSON.stringify(results));
+        setRealmPlaces([...results]);
+        setSource('realm');
+      });
+  };
+  const fetchTripsFromServer = async () => {
+    try {
+      console.log("sync",user?._id)
+      const response = await fetch(`http://192.168.109.128:3000/api/sync/${user?._id}`);
+      const data = await response.json();
+  
+      console.log('Fetched trips from server:', data);
+      setServerPlaces(data);
+      setSource('server');
+      // Optionally, insert into Realm
+      const realm = await Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] });
+      realm.write(() => {
+        data.forEach((trip:any) => {
+          realm.create('Place', trip, Realm.UpdateMode.Modified);
+        });
+      });
+    } catch (err) {
+      console.error('Failed to fetch trips:', err);
+    }
+  };
+  const displayedPlaces = source === 'server' ? serverPlaces : realmPlaces;
+  const renderRightActions = (tripId: number) => (
+    <TouchableOpacity
+      onPress={() => confirmDelete(tripId)}
+      style={{
+        backgroundColor: 'red',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '90%',
+        borderTopLeftRadius:15,
+        borderBottomLeftRadius:15
+      }}
+    >
+      <Text style={{ color: 'white' }}>Delete</Text>
+    </TouchableOpacity>
+  );
+  const confirmDelete = (tripId: number) => {
+    Alert.alert(
+      'Delete Trip',
+      'Are you sure you want to delete this place?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDelete(tripId), // call actual delete
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+  const handleDelete = async(tripId: number) =>{
+    console.log("placeId",tripId);
+    try {
+      // Delete from Realm
+      // Open Realm
+      console.log('source--',source);
+      const realm = await Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] });
+
+    // Step 1: Convert all realm objects to plain JS objects BEFORE deletion
+    const safePlaces = realm.objects<Place>('Place').map(item => ({ ...item }));
+
+    // Step 2: Delete the target object from Realm
+    realm.write(() => {
+      const tripToDelete = realm.objectForPrimaryKey('Place', tripId);
+      if (tripToDelete && !tripToDelete.isValid()) return; // avoid double-delete error
+      if (tripToDelete) realm.delete(tripToDelete);
+    });
+    
+    const response = await fetch(`http://192.168.109.128:3000/api/sync/delete/${tripId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('MongoDB deletion failed');
+    }
+  
+
+    // Step 3: Filter and update state using plain JS objects
+    const updated = safePlaces.filter(p => p._id !== tripId);
+    setRealmPlaces(updated);
+    setServerPlaces(updated);
+    } catch (err) {
+      console.error('Delete error:', err);
+    }
   }
   return (
     
@@ -55,7 +166,6 @@ export default function ExploreScreen() {
       </View>
       {/* <Text testID="hello-text" style={styles.text}>ExploreScreen</Text> */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between',width:'100%'}}>
-      {/* <View style={{ flexDirection: 'row', padding: scale(16) ,backgroundColor:'#F43F5E'}}> */}
         <TouchableOpacity onPress={addTripDetail}>
         <View style={{ flexDirection: 'row', gap:8,alignItems: 'center',backgroundColor:'#F43F5E', margin:scale(10),padding: scale(8), borderRadius: 8}}>
           <Ionicons name="add-circle-outline" size={24} color="white" />
@@ -63,8 +173,7 @@ export default function ExploreScreen() {
         </View>   
         </TouchableOpacity>
        
-      {/* </View> */}
-      <TouchableOpacity onPress={addTripDetail}>
+      <TouchableOpacity onPress={fetchTripsFromServer}>
         <View style={{ flexDirection: 'row',gap:8, alignItems: 'center',backgroundColor:'#F43F5E', margin:scale(10),padding: scale(8), borderRadius: 8}}>
           {/* <Ionicons name size={24} color="white" /> */}
           <Ionicons name="sync-outline" size={24} color="white" />
@@ -73,13 +182,14 @@ export default function ExploreScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.container1}>
-      {place.length === 0 ? (
+      {displayedPlaces.length === 0 ? (
         <Text>No data found</Text>
       ) : (
       <FlatList
-       data={place}
+       data={displayedPlaces}
         keyExtractor={(item) => item._id.toString()}
         renderItem={({ item }) => (
+          <Swipeable renderRightActions={() => renderRightActions(item._id)}>
           <View style={styles.card}>
             <Text style={styles.titlecard} >
               Place I explored {item.placeName}
@@ -94,6 +204,7 @@ export default function ExploreScreen() {
               I travelled by {item.travelBy}
             </Text>        
           </View>
+          </Swipeable>
         )}
       />)}
     </View>

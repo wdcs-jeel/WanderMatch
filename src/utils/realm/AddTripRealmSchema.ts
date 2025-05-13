@@ -5,7 +5,8 @@ export const travelSchema = {
       placeName: 'string',
       experience: 'string',
       travelWith: 'string',
-      travelBy : 'string'
+      travelBy : 'string',
+      userId: 'string'
     },
     primaryKey: '_id',
   };

@@ -272,21 +272,21 @@ export default function OnboardingPage() {
       await register(registrationData);
 
       // Update profile with additional information
-      const profileData = {
-        topDestinations: Array.isArray(formData.topDestinations) ? formData.topDestinations : [],
-      };
-      console.log('Profile update data:', profileData);
-      await profileAPI.updateProfile(profileData);
+      // const profileData = {
+      //   topDestinations: Array.isArray(formData.topDestinations) ? formData.topDestinations : [],
+      // };
+      // console.log('Profile update data:', profileData);
+      // // await profileAPI.updateProfile(profileData);
 
-      // Upload identity document if provided
-      if (formData.identityDocument) {
-        await profileAPI.uploadIdentity(formData.identityDocument);
-      }
+      // // Upload identity document if provided
+      // if (formData.identityDocument) {
+      //   await profileAPI.uploadIdentity(formData.identityDocument);
+      // }
 
-      // Upload profile photos if provided
-      if (formData.profilePhotos.length > 0) {
-        await profileAPI.uploadPhotos(formData.profilePhotos);
-      }
+      // // Upload profile photos if provided
+      // if (formData.profilePhotos.length > 0) {
+      //   await profileAPI.uploadPhotos(formData.profilePhotos);
+      // }
 
       // Navigate to dashboard
       navigation.navigate('MainApp');

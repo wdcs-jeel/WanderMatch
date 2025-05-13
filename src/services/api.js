@@ -61,6 +61,8 @@ export const authAPI = {
   logout: async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userData');
   },
 };
 
