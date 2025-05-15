@@ -11,7 +11,6 @@ import {
   SafeAreaView,
   Platform,
   FlatList,
-  SectionList,
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'react-native-linear-gradient';
@@ -19,17 +18,8 @@ import { useNavigation } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useAuth } from '../../context/AuthContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-type RootStackParamList = {
-    Onboarding: undefined;
-    Home: undefined;
-    Profile: undefined;
-    Dashboard: undefined;
-    Login: undefined;
-    EditProfile: undefined;
-};
-  
-  type NavigationProp = NativeStackNavigationProp<RootStackParamList>
+import { NavigationProp } from '../../utils/navigation/RootStackParamList';
+
 export default function ProfilePage() {
  const navigation = useNavigation<NavigationProp>();
  const { user, logout } = useAuth();
@@ -201,7 +191,6 @@ export default function ProfilePage() {
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back-outline" size={20} color="black" />
-          {/* <Text style={styles.backButtonText}>Back</Text> */}
         </TouchableOpacity>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.iconButton}>
@@ -251,10 +240,10 @@ export default function ProfilePage() {
             </TouchableOpacity>
 
          
-            <TouchableOpacity style={[styles.button, styles.messageButton]}>
+            <TouchableOpacity style={[styles.button, styles.messageButton]} onPress={()=>navigation.navigate('Feedback')}>
               {/* MessageCircle icon */}
               <Ionicons name="chatbubbles" size={24} color="white" />
-              <Text style={styles.messageButtonText}>Message</Text>
+              <Text style={styles.messageButtonText}>Feedback</Text>
             </TouchableOpacity>
           </View>
 
