@@ -16,24 +16,20 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../context/AuthContext';
-import { profileAPI } from '../../services/api';
 
-type RootStackParamList = {
-  Home: undefined
-  Dashboard: undefined
-  Onboarding: undefined
-  MainApp:undefined
-}
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>
+import { NavigationProp } from '../../utils/navigation/RootStackParamList';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../redux/store';
+import { register } from '../../redux/slice/authSlice';
+import CommonTextInput from '../../components/TextInput';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState('email');
   const navigation = useNavigation<NavigationProp>();
-  const { register, error: authError } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+
   const totalSteps = 4;
 
   // Form state
@@ -269,7 +265,12 @@ export default function OnboardingPage() {
       console.log('Final registration data:', JSON.stringify(registrationData, null, 2));
       
       // Register user with all required data
-      await register(registrationData);
+      const resultAction = await dispatch(register(registrationData));
+      if (register.fulfilled.match(resultAction)) {
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Registration Failed');
+      }
 
       // Update profile with additional information
       // const profileData = {
@@ -349,7 +350,7 @@ export default function OnboardingPage() {
               <View style={styles.tabContent}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email address</Text>
-                  <TextInput
+                  <CommonTextInput
                     testID="email-input"
                     style={[styles.input, errors.email ? styles.inputError : null]}
                     placeholder="Enter your email"
@@ -361,7 +362,15 @@ export default function OnboardingPage() {
                 </View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Create password</Text>
-                  <TextInput
+                  {/* <TextInput
+                    testID="password-input"
+                    style={[styles.input, errors.password ? styles.inputError : null]}
+                    placeholder="Create a secure password"
+                    secureTextEntry
+                    value={formData.password}
+                    onChangeText={(value) => handleInputChange('password', value)}
+                  /> */}
+                  <CommonTextInput
                     testID="password-input"
                     style={[styles.input, errors.password ? styles.inputError : null]}
                     placeholder="Create a secure password"
@@ -378,7 +387,7 @@ export default function OnboardingPage() {
               <View style={styles.tabContent}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Phone number</Text>
-                  <TextInput
+                   <CommonTextInput
                     testID="phone-input"
                     style={[styles.input, errors.phoneNumber ? styles.inputError : null]}
                     placeholder="+1 (555) 000-0000"
@@ -458,7 +467,7 @@ export default function OnboardingPage() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full legal name</Text>
-              <TextInput
+              <CommonTextInput
                 testID="full-name-input"
                 style={[styles.input, errors.fullName ? styles.inputError : null]}
                 placeholder="As it appears on your ID"
@@ -470,7 +479,7 @@ export default function OnboardingPage() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Date of birth</Text>
-              <TextInput
+              <CommonTextInput
                 testID="date-of-birth-input"
                 style={[styles.input, errors.dateOfBirth ? styles.inputError : null]}
                 placeholder="YYYY-MM-DD"
@@ -669,7 +678,7 @@ export default function OnboardingPage() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Bio</Text>
-              <TextInput
+              <CommonTextInput
                 testID="bio-input"
                 style={[styles.input, styles.textArea, errors.bio ? styles.inputError : null]}
                 placeholder="Tell potential matches about yourself and your travel dreams..."
@@ -685,7 +694,7 @@ export default function OnboardingPage() {
               <Text style={styles.label}>
                 Top destinations I want to visit:
               </Text>
-              <TextInput
+              <CommonTextInput
                 testID="destinations-input"
                 style={[styles.input, errors.topDestinations ? styles.inputError : null]}
                 placeholder="Add destinations (comma separated)"
@@ -697,12 +706,12 @@ export default function OnboardingPage() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Languages I speak:</Text>
-              <TextInput
-                testID="languages-input"
-                style={[styles.input, errors.languages ? styles.inputError : null]}
-                placeholder="Add languages (comma separated)"
-                value={formData.languages.join(', ')}
-                onChangeText={(value) => handleInputChange('languages', value.split(',').map(l => l.trim()))}
+              <CommonTextInput
+               testID="languages-input"
+               style={[styles.input, errors.languages ? styles.inputError : null]}
+               placeholder="Add languages (comma separated)"
+               value={formData.languages.join(', ')}
+               onChangeText={(value) => handleInputChange('languages', value.split(',').map(l => l.trim()))}
               />
               {errors.languages ? <Text style={styles.errorText}>{errors.languages}</Text> : null}
             </View>
@@ -776,11 +785,11 @@ export default function OnboardingPage() {
               {step === 4 && 'Set up your profile details'}
             </Text>
 
-            {authError && (
+            {/* {authError && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{authError}</Text>
               </View>
-            )}
+            )} */}
 
             {renderStepContent()}
           </View>

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -17,6 +16,7 @@ import { useMutation } from '@apollo/client';
 import { ADD_FEEDBACK, EDIT_FEEDBACK } from '../../../../utils/GraphQl/queryService';
 import { NavigationProp } from '../../../../utils/navigation/RootStackParamList';
 import { AddFeedbackData, AddFeedbackVars, UpdateFeedbackData, UpdateFeedbackVars } from '../../../../utils/GraphQl/querytypes';
+import CommonTextInput from '../../../../components/TextInput';
 
 export default function AddFeedback({route}:any) {
   const navigation = useNavigation<NavigationProp>();
@@ -85,11 +85,11 @@ export default function AddFeedback({route}:any) {
       <View style={styles.form}>
         <View>
           <Text style={styles.label}>Your Feedback</Text>
-          <TextInput
+          <CommonTextInput
             style={[styles.input, styles.textArea]}
+            placeholder="Tell us about your feedback"
             value={feedback}
             onChangeText={setFeedback}
-            placeholder="Tell us about your feedback"
             multiline
             numberOfLines={4}
           />

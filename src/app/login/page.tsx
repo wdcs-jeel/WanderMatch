@@ -11,32 +11,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useAuth } from "../../context/AuthContext";
-
-type RootStackParamList = {
-  Home: undefined
-  ForgotPassword: undefined
-  Onboarding: undefined
-  Dashboard: undefined
-  MainApp: undefined
-}
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>
+import { NavigationProp } from "../../utils/navigation/RootStackParamList"
+import { useDispatch, useSelector } from "react-redux"
+import { AppDispatch, RootState } from "../../redux/store"
+import { login } from "../../redux/slice/authSlice"
+import CommonTextInput from "../../components/TextInput";
 
 export default function LoginPage() {
   const navigation = useNavigation<NavigationProp>()
-  const { login, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  
+  const dispatch = useDispatch<AppDispatch>();
+  const { error } = useSelector((state: RootState) => state.auth)
   // Validation errors
   const [errors, setErrors] = useState({
     email: "",
@@ -90,20 +81,11 @@ export default function LoginPage() {
     if (!validateForm()) {
       return;
     }
-
     try {
       setLoading(true);
-      setError("");
-      
-      await login({ email, password });
-      console.log('Login successful, navigating to MainApp');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainApp' }],
-      });
+      dispatch(login({ email, password , navigation }));
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -134,14 +116,11 @@ export default function LoginPage() {
                   <Text style={styles.label}>Email</Text>
                   <View style={[styles.inputFieldContainer, errors.email ? styles.inputError : null]}>
                     <Ionicons name="mail-outline" size={24} color="#9CA3AF" />
-                    <TextInput
-                      style={styles.input}
+                    <CommonTextInput
                       placeholder="Enter your email"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
                       value={email}
-                      onChangeText={(text) => {
+                      keyboardType="email-address"
+                      onChangeText={(text:any) => {
                         setEmail(text);
                         if (errors.email) {
                           setErrors(prev => ({ ...prev, email: "" }));
@@ -161,12 +140,11 @@ export default function LoginPage() {
                   </View>
                   <View style={[styles.inputFieldContainer, errors.password ? styles.inputError : null]}>
                     <Ionicons name="lock-closed-outline" size={24} color="#9CA3AF" />
-                    <TextInput
-                      style={styles.input}
+
+                    <CommonTextInput
                       placeholder="Enter your password"
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry
                       value={password}
+                      secureTextEntry
                       onChangeText={(text) => {
                         setPassword(text);
                         if (errors.password) {

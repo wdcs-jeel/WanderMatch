@@ -3,38 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   Image,
   KeyboardAvoidingView,
   Platform,
   Alert,
-  BackHandler,
 } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SocketService from '../../services/SocketService';
-
-type ChatMessage = {
-  text: string;
-  isMine: boolean;
-  status: 'sent' | 'delivered' | 'read';
-  timestamp: string; // ISO or formatted string
-};
-
-interface ChatScreenProps {
-  recipient: {
-    id: number;
-    name: string;
-    avatar: string;
-    online: boolean;
-  };
-  onBack: () => void;
-  ws: WebSocket | null;
-  userId: string;
-  userName: string;
-}
+import { ChatMessage, ChatScreenProps } from '../../utils/types/types';
+import CommonTextInput from '../../components/TextInput';
 
 export default function ChatScreen({ recipient, onBack, ws, userId, userName }: ChatScreenProps) {
   const [data, setData] = useState<ChatMessage[]>([
@@ -210,13 +190,12 @@ export default function ChatScreen({ recipient, onBack, ws, userId, userName }: 
         <TouchableOpacity style={styles.attachButton}>
           <Ionicons name="attach" size={24} color="#6B7280" />
         </TouchableOpacity>
-        <TextInput
+        <CommonTextInput
           style={styles.input}
           placeholder="Type a message..."
           value={inputMessage}
           onChangeText={setInputMessage}
           multiline
-          placeholderTextColor="#9CA3AF"
         />
         <TouchableOpacity 
           style={[

@@ -4,13 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-type RootStackParamList = {
-  Onboarding: undefined;
-  Login: undefined;
-};
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>
+import { NavigationProp } from '../utils/navigation/RootStackParamList';
 
 export default function HomePage() {
 const navigation = useNavigation<NavigationProp>();

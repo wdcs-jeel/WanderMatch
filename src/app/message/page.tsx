@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, SafeAreaView, Alert } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ChatScreen from './ChatScreen';
+import CommonTextInput from '../../components/TextInput';
 
 
 export default function MessageScreen() {
@@ -165,10 +166,9 @@ export default function MessageScreen() {
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>
           <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
-          <TextInput
+          <CommonTextInput
             style={styles.searchInput}
             placeholder="Search messages"
-            placeholderTextColor="#9CA3AF"
           />
         </View>
       </View>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -11,23 +10,21 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../../context/AuthContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { travelSchema } from '../../../utils/realm/AddTripRealmSchema';
 import Realm from 'realm';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-type RootStackParamList = {
-  Profile: undefined;
-  MainApp: undefined;
-  Login: undefined;
-};
-interface User {
-  _id: string;
-}
+import { NavigationProp } from '../../../utils/navigation/RootStackParamList';
+import { getUser } from '../../../utils/types/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../redux/store';
+import { addPlace, setTripAdded } from '../../../redux/slice/tripSlice';
+
+import { Trip } from '../../../redux/type';
+import CommonTextInput from '../../../components/TextInput';
+
 let realm: Realm;
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function AddTripDataPage() {
   const navigation = useNavigation<NavigationProp>();
@@ -39,18 +36,16 @@ export default function AddTripDataPage() {
   const [travelWith, setTravelWith] = useState('');
   const [travelBy, setTravelBy] = useState('');
   const [error, setError] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSelector((state: RootState) => state.auth);
   const [userId,SetUserId] = useState('');
-
+  const dispatch = useDispatch<AppDispatch>();
   const [errors, setErrors] = useState({
     placeName: "",
     experience: "",
     travelWith:"",
     travelBy:""
   });
-  useEffect(()=>{
-    getUserId();   
-  },[])
+ 
   useEffect(() => {
     (async () => {
       Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] }).then(r => {
@@ -69,18 +64,6 @@ export default function AddTripDataPage() {
     }
   }, [user]);
   
-  const getUserId = async() => {
-    try {
-      const jsonValue = await AsyncStorage.getItem('userData');
-      if (jsonValue != null) {
-        const parsedUser = JSON.parse(jsonValue);
-        console.log("--parsed",parsedUser)
-        setUser(parsedUser); // set user object in state
-      }
-    } catch (e) {
-      console.error('Failed to fetch user data', e);
-    }
-  }
  // Validate form
  const validateForm = () => {
   let isValid = true;
@@ -120,7 +103,6 @@ export default function AddTripDataPage() {
         return;
       }
       try {
-        console.log("userId--", userId);
         setLoading(true);
         setError('');
         realm.write(() => {
@@ -144,38 +126,28 @@ export default function AddTripDataPage() {
       } finally {
         setLoading(false);
       }
+      dispatch(setTripAdded(true));
       navigation.goBack();
   };
 const uploadTripsToServer = async () => {
   try {
     const realm = await Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] });
     const allPlace = realm.objects('Place');
-
-    const placeList = allPlace.map(place => ({
-      _id: place._id,
-      placeName: place.placeName,
-      experience: place.experience,
-      travelWith: place.travelWith,
-      travelBy: place.travelBy,
-      userId: user?._id, // ensure this is defined
+    if (!user?._id) {
+      console.error("User ID is undefined");
+      return;
+    }
+    
+    const placeList: Trip[] = allPlace.map((place: any) => ({
+      _id: Number(place._id),
+      placeName: String(place.placeName),
+      experience: String(place.experience),
+      travelWith: String(place.travelWith),
+      travelBy: String(place.travelBy),
+      userId: String(user._id),
     }));
 
-    const response = await fetch('http://192.168.109.128:3000/api/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ places: placeList }),
-    });
-
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      const data = await response.json();
-      console.log('Uploaded successfully:', data);
-    } else {
-      const text = await response.text();
-      console.error('Unexpected response (not JSON):', text);
-    }
+     dispatch(addPlace(placeList))
   } catch (err) {
     console.error('Failed to upload:', err);
   }
@@ -205,22 +177,22 @@ const uploadTripsToServer = async () => {
       <View style={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Place you explored*</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
+            placeholder="Enter your full name"
             value={placeName}
             onChangeText={setPlaceName}
-            placeholder="Enter your full name"
           />
-           {errors.placeName ? <Text style={styles.fieldErrorText}>{errors.placeName}</Text> : null}
+          {errors.placeName ? <Text style={styles.fieldErrorText}>{errors.placeName}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Your experience</Text>
-          <TextInput
+          <CommonTextInput
             style={[styles.input, styles.textArea]}
+             placeholder="Tell us about yourself"
             value={experience}
             onChangeText={setExperience}
-            placeholder="Tell us about yourself"
             multiline
             numberOfLines={4}
           />
@@ -229,22 +201,22 @@ const uploadTripsToServer = async () => {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>With whom you explored this place?</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
+            placeholder='ex.-friends/family/solo/officemates'
             value={travelWith}
             onChangeText={setTravelWith}
-            placeholder='ex.-friends/family/solo/officemates'
           />
           {errors.travelWith ? <Text style={styles.fieldErrorText}>{errors.travelWith}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>You reached there by ?</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
+            placeholder='car/bus/train/flight'
             value={travelBy}
             onChangeText={setTravelBy}
-            placeholder='car/bus/train/flight'
           />
          {errors.travelBy ? <Text style={styles.fieldErrorText}>{errors.travelBy}</Text> : null}
         </View>

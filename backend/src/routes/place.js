@@ -30,10 +30,17 @@ router.post('/', [
       );
     }
 
-    res.status(200).json({ message: 'Trips synced successfully' });
+    // Fetch updated list of trips for this user
+    const userId = places[0].userId;
+    const updatedTrips = await Place.find({ userId });
+
+    return res.status(200).json({
+      message: 'Trips added successfully',
+      trips: updatedTrips,
+    });
   } catch (error) {
     console.error('Sync error:', error);
-    res.status(500).json({ message: 'Failed to sync trips' });
+    res.status(500).json({ message: 'Failed to add trips' });
   }
 });
 

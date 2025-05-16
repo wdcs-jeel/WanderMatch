@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -11,40 +10,22 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../../context/AuthContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { User } from '../../../context/AuthContext';
 
-type RootStackParamList = {
-  Profile: undefined;
-  MainApp: undefined;
-  Login: undefined;
-};
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-type TravelType = 'Solo Traveler' | 'Group Seeker' | 'Travel Funder' | 'Nomad';
-type LookingForOption = 'Romance' | 'Friendship' | 'Adventure Partners' | 'Local Guides';
-type TravelStyle = 'Luxury' | 'Budget' | 'Adventure' | 'Cultural' | 'Relaxation' | 'Foodie';
-
-const TRAVEL_TYPES: TravelType[] = ['Solo Traveler', 'Group Seeker', 'Travel Funder', 'Nomad'];
-const LOOKING_FOR_OPTIONS: LookingForOption[] = ['Romance', 'Friendship', 'Adventure Partners', 'Local Guides'];
-const TRAVEL_STYLE_OPTIONS: TravelStyle[] = ['Luxury', 'Budget', 'Adventure', 'Cultural', 'Relaxation', 'Foodie'];
-
-interface FormData {
-  fullName: string;
-  bio: string;
-  travelType: string;
-  lookingFor: string;
-  travelStyle: string;
-  languages: string;
-}
+import { NavigationProp } from '../../../utils/navigation/RootStackParamList';
+import { FormData, LOOKING_FOR_OPTIONS, LookingForOption, TRAVEL_STYLE_OPTIONS, TRAVEL_TYPES, TravelStyle, TravelType } from '../../../utils/types/types';
+// import { User } from '../../../context/ContextType';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../redux/store';
+import { updateProfile } from '../../../redux/slice/authSlice';
+import { User } from '../../../redux/type';
+import CommonTextInput from '../../../components/TextInput';
 
 export default function EditProfilePage() {
   const navigation = useNavigation<NavigationProp>();
-  const { user, updateProfile, isLoading } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  const {user,isLoading} = useSelector((state: RootState) => state.auth);
   const [isSaving, setIsSaving] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
@@ -85,7 +66,7 @@ export default function EditProfilePage() {
 
   const handleSave = async () => {
     try {
-      if (!user || !updateProfile) {
+      if (!user) {
         Alert.alert(
           'Session Expired',
           'Your session has expired. Please log in again.',
@@ -158,13 +139,8 @@ export default function EditProfilePage() {
       };
 
       console.log('Current user:', user);
-      console.log('Sending update with data:', updatedData);
-
       setIsSaving(true);
-      const result = await updateProfile(updatedData);
-      console.log('Update result:', result);
-      
-      Alert.alert('Success', 'Profile updated successfully');
+      dispatch(updateProfile(updatedData));
       navigation.goBack();
     } catch (error: any) {
       console.error('Profile update error:', error);
@@ -223,7 +199,7 @@ export default function EditProfilePage() {
       <View style={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Full Name *</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
             value={formData.fullName}
             onChangeText={(text) => setFormData({ ...formData, fullName: text })}
@@ -233,7 +209,7 @@ export default function EditProfilePage() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Bio</Text>
-          <TextInput
+          <CommonTextInput
             style={[styles.input, styles.textArea]}
             value={formData.bio}
             onChangeText={(text) => setFormData({ ...formData, bio: text })}
@@ -245,7 +221,7 @@ export default function EditProfilePage() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Travel Type</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
             value={formData.travelType}
             onChangeText={(text) => setFormData({ ...formData, travelType: text })}
@@ -256,7 +232,7 @@ export default function EditProfilePage() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Looking For (comma-separated)</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
             value={formData.lookingFor}
             onChangeText={(text) => setFormData({ ...formData, lookingFor: text })}
@@ -267,7 +243,7 @@ export default function EditProfilePage() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Travel Style (comma-separated)</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
             value={formData.travelStyle}
             onChangeText={(text) => setFormData({ ...formData, travelStyle: text })}
@@ -278,7 +254,7 @@ export default function EditProfilePage() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Languages (comma-separated)</Text>
-          <TextInput
+          <CommonTextInput
             style={styles.input}
             value={formData.languages}
             onChangeText={(text) => setFormData({ ...formData, languages: text })}

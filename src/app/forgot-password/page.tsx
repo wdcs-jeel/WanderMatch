@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -12,14 +11,9 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-type RootStackParamList = {
-  Login: undefined;
-};
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { NavigationProp } from '../../utils/navigation/RootStackParamList';
+import CommonTextInput from '../../components/TextInput';
 
 export default function ForgotPasswordPage() {
   const navigation = useNavigation<NavigationProp>();
@@ -75,18 +69,16 @@ export default function ForgotPasswordPage() {
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputFieldContainer}>
                     <Ionicons name="mail-outline" size={24} color="#9CA3AF" />
-                    <TextInput
+                    <CommonTextInput
                       style={styles.input}
                       placeholder="Enter your email"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
                       value={email}
-                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                       autoCapitalize="none"
+                       onChangeText={setEmail}
                     />
                   </View>
                 </View>
-
                 <TouchableOpacity
                   style={styles.resetButton}
                   onPress={handleResetPassword}

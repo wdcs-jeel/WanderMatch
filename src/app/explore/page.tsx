@@ -1,56 +1,44 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, Alert } from 'react-native';
 import Realm from 'realm';
 import { travelSchema } from '../../utils/realm/AddTripRealmSchema';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { moderateScale, scale } from 'react-native-size-matters';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
-type RootStackParamList = {
-  AddTrip:undefined
-};
-interface User {
-  _id: string;
-}
-type Place = {
-  _id: number,
-  placeName: 'string',
-  experience: 'string',
-  travelWith: 'string',
-  travelBy : 'string',
-  userId : 'string'
-};
+import { Place, getUser } from '../../utils/types/types';
+import { NavigationProp } from '../../utils/navigation/RootStackParamList';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../redux/store';
+import { deletePlace, setTripAdded, syncPlace } from '../../redux/slice/tripSlice';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function ExploreScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [realmPlaces, setRealmPlaces] = useState<Place[]>([]);
-  const [serverPlaces, setServerPlaces] = useState<Place[]>([]);
   const [source, setSource] = useState<'realm' | 'server'>('realm');
-  const [user, setUser] = useState<User | null>(null);
-  useEffect(()=>{
-    const getUserId = async() => {
-      try {
-        const jsonValue = await AsyncStorage.getItem('userData');
-        if (jsonValue != null) {
-          const parsedUser = JSON.parse(jsonValue);
-          console.log("--parsed",parsedUser)
-          setUser(parsedUser); // set user object in state
-        }
-      } catch (e) {
-        console.error('Failed to fetch user data', e);
-      }
-    }
-    getUserId();
-  },[])
+  const { user } = useSelector((state: RootState) => state.auth);
+  const trips = useSelector((state: RootState) => state.trips.trips);
+  const tripAdded = useSelector((state: RootState) => state.trips.tripAdded);
+  const dispatch = useDispatch<AppDispatch>();
+  const displayedPlaces = source === 'server' ? trips : realmPlaces;
   useFocusEffect(
     React.useCallback(() => {
-      if (user && user._id) {
-        loadRealmPlaces(user._id);
-      }
-    }, [user])
+      const load = async () => {
+        if (user && user._id) {
+          // First-time load or always load Realm
+          await loadRealmPlaces(user._id);
+  
+          // If coming back from AddTrip, fetch server data
+          if (tripAdded) {
+           setSource('server')
+           await dispatch(setTripAdded(false));
+          }
+        }
+      };
+  
+      load();
+    }, [user, tripAdded])
   );
   const addTripDetail = () =>{
     navigation.navigate('AddTrip')
@@ -59,32 +47,26 @@ export default function ExploreScreen() {
     console.log("iinside ralm",userId)
       Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] }).then(r => {
         const results = r.objects<Place>('Place').filtered('userId == $0', userId);
+
         console.log('Stored places:', JSON.stringify(results));
-        setRealmPlaces([...results]);
+        const plainResults = results.map(item => ({ ...item }));
+        setRealmPlaces(plainResults);
+
         setSource('realm');
       });
   };
   const fetchTripsFromServer = async () => {
     try {
       console.log("sync",user?._id)
-      const response = await fetch(`http://192.168.109.128:3000/api/sync/${user?._id}`);
-      const data = await response.json();
-  
-      console.log('Fetched trips from server:', data);
-      setServerPlaces(data);
-      setSource('server');
-      // Optionally, insert into Realm
-      const realm = await Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] });
-      realm.write(() => {
-        data.forEach((trip:any) => {
-          realm.create('Place', trip, Realm.UpdateMode.Modified);
-        });
-      });
+      const resultAction = await dispatch(syncPlace(user?._id));
+      if (syncPlace.fulfilled.match(resultAction)) {
+        setSource('server');
+      }
     } catch (err) {
       console.error('Failed to fetch trips:', err);
     }
   };
-  const displayedPlaces = source === 'server' ? serverPlaces : realmPlaces;
+
   const renderRightActions = (tripId: number) => (
     <TouchableOpacity
       onPress={() => confirmDelete(tripId)}
@@ -116,37 +98,21 @@ export default function ExploreScreen() {
       { cancelable: true }
     );
   };
-  const handleDelete = async(tripId: number) =>{
-    console.log("placeId",tripId);
+  const handleDelete = async(tripId: number) => {
     try {
-      // Delete from Realm
-      // Open Realm
-      console.log('source--',source);
       const realm = await Realm.open({ path: 'placeRealm.realm', schema: [travelSchema] });
+      const safePlaces = realm.objects<Place>('Place').map(item => ({ ...item }));
+      realm.write(() => {
+        const tripToDelete = realm.objectForPrimaryKey('Place', tripId);
+        if (tripToDelete && tripToDelete.isValid()) {
+          realm.delete(tripToDelete);
+        }
+      });
 
-    // Step 1: Convert all realm objects to plain JS objects BEFORE deletion
-    const safePlaces = realm.objects<Place>('Place').map(item => ({ ...item }));
-
-    // Step 2: Delete the target object from Realm
-    realm.write(() => {
-      const tripToDelete = realm.objectForPrimaryKey('Place', tripId);
-      if (tripToDelete && !tripToDelete.isValid()) return; // avoid double-delete error
-      if (tripToDelete) realm.delete(tripToDelete);
-    });
-    
-    const response = await fetch(`http://192.168.109.128:3000/api/sync/delete/${tripId}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      throw new Error('MongoDB deletion failed');
-    }
-  
-
-    // Step 3: Filter and update state using plain JS objects
-    const updated = safePlaces.filter(p => p._id !== tripId);
-    setRealmPlaces(updated);
-    setServerPlaces(updated);
+      await dispatch(deletePlace(tripId));
+      const updated = safePlaces.filter((p) => p._id !== tripId);
+      setRealmPlaces(updated);
+      setSource('realm')
     } catch (err) {
       console.error('Delete error:', err);
     }
@@ -187,7 +153,7 @@ export default function ExploreScreen() {
       ) : (
       <FlatList
        data={displayedPlaces}
-        keyExtractor={(item) => item._id.toString()}
+       keyExtractor={(item, index) => (item._id !== undefined ? item._id.toString() : `fallback-${index}`)}
         renderItem={({ item }) => (
           <Swipeable renderRightActions={() => renderRightActions(item._id)}>
           <View style={styles.card}>

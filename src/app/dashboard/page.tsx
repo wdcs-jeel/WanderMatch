@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   SafeAreaView,
   Platform,
   FlatList,
@@ -15,6 +14,7 @@ import {
 import  LinearGradient  from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { verticalScale } from 'react-native-size-matters';
+import CommonTextInput from '../../components/TextInput';
 
 export default function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -149,11 +149,11 @@ export default function DashboardPage() {
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
             <Ionicons name="search" size={16} color="#9CA3AF" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search destinations or travelers"
-              placeholderTextColor="#9CA3AF"
-            />
+             <CommonTextInput
+                placeholder="Search destinations or travelers"
+                keyboardType="email-address"
+                style={styles.searchInput}
+              />
           </View>
           <TouchableOpacity style={styles.filterButton}>
             <Ionicons name="options-outline" size={16} color="#374151" />

@@ -16,13 +16,17 @@ import {
 import { LinearGradient } from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import { useAuth } from '../../context/AuthContext';
+
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NavigationProp } from '../../utils/navigation/RootStackParamList';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../redux/store';
+import { logout } from '../../redux/slice/authSlice';
 
 export default function ProfilePage() {
  const navigation = useNavigation<NavigationProp>();
- const { user, logout } = useAuth();
+const user = useSelector((state: RootState) => state.auth.user);
+const dispatch = useDispatch<AppDispatch>();
  console.log('Profile - Current user:', user);
  const [activeTab, setActiveTab] = useState('Trips');
  const [numColumns, setNumColumns] = useState(3);
@@ -39,7 +43,7 @@ export default function ProfilePage() {
           text: "Logout", 
           onPress: async () => {
             try {
-              await logout();
+              dispatch(logout());
               console.log('Logout successful, navigating to Login');
               navigation.reset({
                 index: 0,
