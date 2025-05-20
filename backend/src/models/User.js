@@ -71,13 +71,21 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   identityDocument: {
-    type: String // URL to stored document
+    type: {
+      data: Buffer,
+      contentType: String
+    },
+    required: true
   },
   
   // Media
   profilePhotos: [{
     type: String // URLs to stored photos
   }],
+  profileImage: {
+    type: String, // URL to main profile image
+    // required: true
+  },
   
   // Timestamps
   createdAt: {

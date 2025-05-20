@@ -69,6 +69,7 @@ const dispatch = useDispatch<AppDispatch>();
  );
  const handleEditProfile = () => {
   navigation.navigate('EditProfile');
+  console.log("user",user)
 };
 
  const renderTripItem = ({ item, index }:any) => (
@@ -214,7 +215,11 @@ const dispatch = useDispatch<AppDispatch>();
           />
           <View style={styles.avatarContainer}>
             <Image
-              source={{ uri: `https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-female-user-profile-vector-illustration-isolated-background-women-profile-sign-business-concept_157943-38866.jpg?semt=ais_hybrid&w=740` }}
+              source={
+                user?.identityDocument?.data
+                  ? { uri: `data:${user.identityDocument.contentType};base64,${user.identityDocument.data}` }
+                  : { uri: `https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-female-user-profile-vector-illustration-isolated-background-women-profile-sign-business-concept_157943-38866.jpg?semt=ais_hybrid&w=740` }
+              }
               style={styles.avatar}
               resizeMode="cover"
             />

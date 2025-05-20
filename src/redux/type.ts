@@ -11,7 +11,14 @@ export interface User {
     topDestinations?: string[];
     languages?: string[];
     identityVerified: boolean;
-    profilePhotos: string[];
+    identityDocument: {
+      data: string; // base64 string
+      contentType: string;
+    };
+    profilePhotos: Array<{
+      data: string; // base64 string
+      contentType: string;
+    }>;
     createdAt: string;
     updatedAt: string;
   }

@@ -32,20 +32,31 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: any, thunkAPI) => {
+  async (formData: FormData, { rejectWithValue }) => {
     try {
-      const formatted = {
-        ...userData,
-        lookingFor: userData.lookingFor.join(','),
-        travelStyle: userData.travelStyle.join(','),
-        languages: userData.languages.join(','),
-      };
-      const response = await api.post('/auth/register', formatted);
-      await AsyncStorage.setItem('userToken', response.data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+      console.log('Sending registration request to backend...', formData);
+      const response = await api.post('/auth/register', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
+        },
+        transformRequest: (data, headers) => {
+          return data; // Don't transform the FormData
+        },
+      });
+      
+      console.log('Registration response:', response.data);
+      
+      // Store token and user data
+      if (response.data.token) {
+        await AsyncStorage.setItem('userToken', response.data.token);
+        await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+      }
+
       return response.data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Registration failed');
+    } catch (error: any) {
+      console.error('Registration error:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data?.message || 'Registration failed');
     }
   }
 );
@@ -59,13 +70,140 @@ export const updateProfile = createAsyncThunk(
     async (updatedData: Partial<User>, { getState, rejectWithValue }) => {
       const state = getState() as { auth: AuthState };
       try {
-        const { data } = await api.put('/profile/update', updatedData);
-        const updatedUser = { ...state.auth.user, ...data };
-        await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
-        Alert.alert('Success', 'Profile updated successfully');
-        return updatedUser;
+        // Create FormData if there's an identity document to upload
+        let formData = new FormData();
+        let hasFile = false;
+
+        console.log('Checking identity document:', updatedData.identityDocument);
+
+        // Check if we have a new identity document
+        if (updatedData.identityDocument) {
+          console.log('Identity document type:', typeof updatedData.identityDocument);
+          
+          // Check if it's a FormData object with _parts
+          const identityDoc = updatedData.identityDocument as any;
+          if (identityDoc._parts) {
+            const parts = identityDoc._parts;
+            const identityDocPart = parts.find((part: any) => part[0] === 'identityDocument');
+            
+            if (identityDocPart && identityDocPart[1]) {
+              const fileData = identityDocPart[1];
+              console.log('Found file data:', fileData);
+              
+              if (fileData.uri) {
+                // Create a proper file object
+                const fileToUpload = {
+                  uri: fileData.uri,
+                  type: fileData.type || 'image/jpeg',
+                  name: fileData.name || 'identity-document.jpg'
+                };
+                console.log('Uploading file:---------------', fileToUpload);
+                formData.append('identityDocument', fileToUpload as any);
+                hasFile = true;
+                delete updatedData.identityDocument; // Remove from regular data
+              } else {
+                console.log('No uri found in file data');
+              }
+            } else {
+              console.log('No identity document part found in FormData');
+            }
+          } else {
+            console.log('Not a FormData object with _parts');
+          }
+        } else {
+          console.log('No identity document in update data');
+        }
+
+        // Add all other fields to FormData
+        Object.entries(updatedData).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            // Send arrays as JSON strings
+            formData.append(key, JSON.stringify(value));
+          } else if (value !== undefined) {
+            formData.append(key, value.toString());
+          }
+        });
+
+        // Log the data being sent (excluding the file)
+        console.log('Sending update data:', {
+          hasFile,
+          fields: {
+            ...updatedData,
+            identityDocument: hasFile ? 'File included' : 'No file'
+          }
+        });
+
+        // Add retry logic for network errors
+        const maxRetries = 3;
+        let retryCount = 0;
+        let lastError = null;
+
+        while (retryCount < maxRetries) {
+          try {
+            const { data } = await api.put('/profile/update', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Accept': 'application/json',
+              },
+              transformRequest: (data, headers) => {
+                return data; // Don't transform FormData
+              },
+              timeout: 30000, // 30 second timeout
+            });
+
+            // Handle the response data
+            const updatedUser = { ...state.auth.user, ...data };
+            
+            // If there's an identity document in the response, ensure it's properly formatted
+            if (updatedUser.identityDocument && updatedUser.identityDocument.data) {
+              updatedUser.identityDocument = {
+                data: updatedUser.identityDocument.data,
+                contentType: updatedUser.identityDocument.contentType
+              };
+            } else if (hasFile && updatedData.identityDocument) {
+              // If we sent a file but didn't get one back, use the original file data
+              const identityDoc = updatedData.identityDocument as any;
+              if (identityDoc._parts) {
+                const parts = identityDoc._parts;
+                const identityDocPart = parts.find((part: any) => part[0] === 'identityDocument');
+                if (identityDocPart && identityDocPart[1]) {
+                  updatedUser.identityDocument = identityDocPart[1];
+                }
+              }
+            }
+
+            await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+            Alert.alert('Success', 'Profile updated successfully');
+            return updatedUser;
+          } catch (error: any) {
+            lastError = error;
+            if (error.message === 'Network Error') {
+              retryCount++;
+              if (retryCount < maxRetries) {
+                console.log(`Retrying update (attempt ${retryCount + 1}/${maxRetries})...`);
+                // Wait for 2 seconds before retrying
+                await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+                continue;
+              }
+            }
+            throw error;
+          }
+        }
+
+        // If we've exhausted all retries, throw the last error
+        throw lastError;
       } catch (error: any) {
-        return rejectWithValue(error.response?.data?.message || 'Profile update failed');
+        console.error('Profile update error:', error.response?.data || error);
+        let errorMessage = 'Profile update failed';
+        
+        if (error.message === 'Network Error') {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+        
+        Alert.alert('Error', errorMessage);
+        return rejectWithValue(errorMessage);
       }
     }
   );

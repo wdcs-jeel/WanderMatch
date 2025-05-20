@@ -17,12 +17,14 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'react-native-image-picker';
 
 import { NavigationProp } from '../../utils/navigation/RootStackParamList';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../redux/store';
 import { register } from '../../redux/slice/authSlice';
 import CommonTextInput from '../../components/TextInput';
+import { pickImage } from '../../services/ImagePickerService';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
@@ -240,57 +242,50 @@ export default function OnboardingPage() {
     try {
       setLoading(true);
       
-      // Log the raw form data
-      console.log('Raw form data:', formData);
+      // Create form data for registration
+      const registrationData = new FormData();
       
-      // Ensure arrays are properly formatted and log each field
-      const registrationData = {
-        email: formData.email,
-        password: formData.password,
-        fullName: formData.fullName,
-        dateOfBirth: formData.dateOfBirth,
-        travelType: formData.travelType,
-        lookingFor: Array.isArray(formData.lookingFor) ? formData.lookingFor : [],
-        travelStyle: Array.isArray(formData.travelStyle) ? formData.travelStyle : [],
-        bio: formData.bio || '',
-        languages: Array.isArray(formData.languages) ? formData.languages : [],
-      };
+      // Add basic user data
+      registrationData.append('email', formData.email.trim());
+      registrationData.append('password', formData.password);
+      registrationData.append('fullName', formData.fullName.trim());
+      registrationData.append('dateOfBirth', formData.dateOfBirth);
+      registrationData.append('travelType', formData.travelType);
+      registrationData.append('lookingFor', JSON.stringify(formData.lookingFor));
+      registrationData.append('travelStyle', JSON.stringify(formData.travelStyle));
+      registrationData.append('bio', formData.bio || '');
+      registrationData.append('languages', JSON.stringify(formData.languages));
+      
+      // Add identity document
+      if (formData.identityDocument) {
+        // Create the file object for React Native
+        const uri = formData.identityDocument;
+        const filename = uri.split('/').pop() || 'identity-document.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-      // Log each array field separately
-      console.log('lookingFor array:', registrationData.lookingFor);
-      console.log('travelStyle array:', registrationData.travelStyle);
-      console.log('languages array:', registrationData.languages);
-      
-      // Log the final registration data
-      console.log('Final registration data:', JSON.stringify(registrationData, null, 2));
-      
-      // Register user with all required data
-      const resultAction = await dispatch(register(registrationData));
-      if (register.fulfilled.match(resultAction)) {
-        navigation.navigate('Home');
+        registrationData.append('identityDocument', {
+          uri,
+          name: filename,
+          type
+        } as any);
+
+        console.log('Sending registration request...');
+        // Register user with all required data
+        const resultAction = await dispatch(register(registrationData));
+        
+        console.log('Registration result:', resultAction);
+        
+        if (register.fulfilled.match(resultAction)) {
+          console.log('Registration successful, navigating to Home');
+          navigation.navigate('MainApp');
+        } else {
+          console.error('Registration failed:', resultAction.error);
+          Alert.alert('Registration Failed', resultAction.error?.message || 'Please try again.');
+        }
       } else {
-        Alert.alert('Registration Failed');
+        Alert.alert('Error', 'Identity document is required');
       }
-
-      // Update profile with additional information
-      // const profileData = {
-      //   topDestinations: Array.isArray(formData.topDestinations) ? formData.topDestinations : [],
-      // };
-      // console.log('Profile update data:', profileData);
-      // // await profileAPI.updateProfile(profileData);
-
-      // // Upload identity document if provided
-      // if (formData.identityDocument) {
-      //   await profileAPI.uploadIdentity(formData.identityDocument);
-      // }
-
-      // // Upload profile photos if provided
-      // if (formData.profilePhotos.length > 0) {
-      //   await profileAPI.uploadPhotos(formData.profilePhotos);
-      // }
-
-      // Navigate to dashboard
-      navigation.navigate('MainApp');
     } catch (error:any) {
       console.error('Registration error details:', {
         message: error.message,
@@ -316,6 +311,90 @@ export default function OnboardingPage() {
   const prevStep = () => {
     if (step > 1) {
       setStep(step - 1);
+    }
+  };
+
+  // const handleImagePick = async () => {
+  //   const options = {
+  //     mediaType: 'photo' as const,
+  //     includeBase64: true,
+  //     maxHeight: 800,
+  //     maxWidth: 800,
+  //     selectionLimit: 5,
+  //   };
+
+  //   try {
+  //     const result = await ImagePicker.launchImageLibrary(options);
+      
+  //     if (result.didCancel) {
+  //       return;
+  //     }
+
+  //     if (result.errorCode) {
+  //       Alert.alert('Error', result.errorMessage);
+  //       return;
+  //     }
+
+  //     if (result.assets && result.assets.length > 0) {
+  //       // Create form data for upload
+  //       const formData = new FormData();
+  //       result.assets.forEach((asset, index) => {
+  //         if (asset.uri) {
+  //           formData.append('photos', {
+  //             uri: asset.uri,
+  //             type: 'image/jpeg',
+  //             name: `photo-${index}.jpg`,
+  //           });
+  //         }
+  //       });
+
+  //       // Update the form data with the selected photo URIs, filtering out any undefined URIs
+  //       const photoUris = result.assets
+  //         .map(asset => asset.uri)
+  //         .filter((uri): uri is string => uri !== undefined);
+        
+  //       handleInputChange('profilePhotos', photoUris);
+  //     }
+  //   } catch (error) {
+  //     console.error('Image picker error:', error);
+  //     Alert.alert('Error', 'Failed to select images. Please try again.');
+  //   }
+  // };
+
+  const handleIdentityDocumentPick = async () => {
+    // const options = {
+    //   mediaType: 'photo' as const,
+    //   includeBase64: true,
+    //   maxHeight: 800,
+    //   maxWidth: 800,
+    //   selectionLimit: 1,
+    // };
+
+    // try {
+    //   const result = await ImagePicker.launchImageLibrary(options);
+    //   console.log("result",result)
+    //   if (result.didCancel) {
+    //     return;
+    //   }
+
+    //   if (result.errorCode) {
+    //     Alert.alert('Error', result.errorMessage);
+    //     return;
+    //   }
+
+    //   if (result.assets && result.assets[0]?.uri) {
+    //     // Update the form data with the selected document URI and base64 data
+    //     handleInputChange('identityDocument', result.assets[0].uri);
+    //   }
+    // } catch (error) {
+    //   console.error('Identity document picker error:', error);
+    //   Alert.alert('Error', 'Failed to select identity document. Please try again.');
+    // }
+    const document = await pickImage(true); // include base64 to send to backend
+    if (document) {
+      // setIdentityDocUri(document.uri);
+      handleInputChange('identityDocument', document.uri);
+      // send `document.base64` to backend if needed
     }
   };
 
@@ -362,14 +441,6 @@ export default function OnboardingPage() {
                 </View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Create password</Text>
-                  {/* <TextInput
-                    testID="password-input"
-                    style={[styles.input, errors.password ? styles.inputError : null]}
-                    placeholder="Create a secure password"
-                    secureTextEntry
-                    value={formData.password}
-                    onChangeText={(value) => handleInputChange('password', value)}
-                  /> */}
                   <CommonTextInput
                     testID="password-input"
                     style={[styles.input, errors.password ? styles.inputError : null]}
@@ -446,22 +517,28 @@ export default function OnboardingPage() {
         return (
           <View style={styles.card}>
             <View style={styles.uploadContainer}>
-              <View style={styles.uploadIconContainer}>
+              {/* <View style={styles.uploadIconContainer}>
                 <Ionicons name="add-circle-outline" size={40} color="#9CA3AF" />
-              </View>
+              </View> */}
               <Text style={styles.uploadText}>
                 Upload a selfie or photo ID
               </Text>
               <TouchableOpacity 
                 style={[styles.uploadButton, errors.identityDocument ? styles.inputError : null]}
-                onPress={() => {
-                  // Implement file picker here
-                  // For now, just set a dummy URL
-                  handleInputChange('identityDocument', 'https://example.com/id.jpg');
-                }}
+                onPress={handleIdentityDocumentPick}
               >
                 <Text style={styles.uploadButtonText}>Choose file</Text>
               </TouchableOpacity>
+              {formData.identityDocument && (
+                <View style={styles.selectedDocumentContainer}>
+                  <Image 
+                    source={{ uri: formData.identityDocument }} 
+                    style={styles.selectedDocumentPreview}
+                    resizeMode="cover"
+                  />
+                  {/* <Text style={styles.selectedDocumentText}>Document selected</Text> */}
+                </View>
+              )}
               {errors.identityDocument ? <Text style={styles.errorText}>{errors.identityDocument}</Text> : null}
             </View>
 
@@ -656,25 +733,25 @@ export default function OnboardingPage() {
       case 4:
         return (
           <View style={styles.card}>
-            <View style={styles.uploadContainer}>
+            {/* <View style={styles.uploadContainer}>
               <View style={styles.uploadIconContainer}>
                 <Ionicons name="person-outline" size={40} color="#9CA3AF" />
               </View>
               <Text style={styles.uploadText}>Upload profile photos</Text>
               <TouchableOpacity 
                 style={styles.uploadButton}
-                onPress={() => {
-                  // Implement file picker here
-                  // For now, just set dummy URLs
-                  handleInputChange('profilePhotos', [
-                    'https://example.com/photo1.jpg',
-                    'https://example.com/photo2.jpg',
-                  ]);
-                }}
+                onPress={handleImagePick}
               >
                 <Text style={styles.uploadButtonText}>Add photos</Text>
               </TouchableOpacity>
-            </View>
+              {formData.profilePhotos.length > 0 && (
+                <View style={styles.selectedPhotosContainer}>
+                  <Text style={styles.selectedPhotosText}>
+                    {formData.profilePhotos.length} photos selected
+                  </Text>
+                </View>
+              )}
+            </View> */}
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Bio</Text>
@@ -1065,5 +1142,30 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#DC2626',
     fontSize: 14,
+  },
+  selectedPhotosContainer: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+  },
+  selectedPhotosText: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+  },
+  selectedDocumentContainer: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  selectedDocumentPreview: {
+    width: 200,
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  selectedDocumentText: {
+    fontSize: 14,
+    color: '#4B5563',
   },
 });
