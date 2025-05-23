@@ -1,35 +1,104 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Image,
   SafeAreaView,
   Platform,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NavigationProp } from '../../utils/navigation/RootStackParamList';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/store';
 import { logout } from '../../redux/slice/authSlice';
 
+interface PhotoItem {
+  uri: string;
+}
+
+interface TripItem {
+  title: string;
+  date: string;
+  companions: string;
+  status: 'Completed' | 'Upcoming';
+}
+
+interface ReviewItem {
+  name: string;
+  date: string;
+  rating: number;
+  text: string;
+}
+
+type TabData = PhotoItem[] | TripItem[] | ReviewItem[];
+
 export default function ProfilePage() {
  const navigation = useNavigation<NavigationProp>();
 const user = useSelector((state: RootState) => state.auth.user);
 const dispatch = useDispatch<AppDispatch>();
- console.log('Profile - Current user:', user);
  const [activeTab, setActiveTab] = useState('Trips');
  const [numColumns, setNumColumns] = useState(3);
+  const [isLoading, setIsLoading] = useState(false);
+  const [displayedPhotos, setDisplayedPhotos] = useState<PhotoItem[]>([]);
+  const [page, setPage] = useState(1);
+  const PHOTOS_PER_PAGE = 9;
+  const photoUrls: PhotoItem[] = [
+    { uri: 'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg' },
+    { uri: 'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg' },
+    { uri: 'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg' },
+    { uri: 'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg' },
+    { uri: 'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg' },
+    { uri: 'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg' },
+    { uri: 'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg' },
+    { uri: 'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg' },
+    { uri: 'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg' },
+   
+  ];
+
+  // Initialize displayed photos when component mounts or tab changes to Photos
+  React.useEffect(() => {
+    if (activeTab === 'Photos') {
+      setDisplayedPhotos(photoUrls.slice(0, PHOTOS_PER_PAGE));
+      setPage(2);
+    }
+  }, [activeTab]);
+
+
+  const loadMorePhotos = useCallback(() => {
+    if (activeTab !== 'Photos' || isLoading) return;
+
+    setIsLoading(true);
+    const nextPage = page + 1;
+    const startIndex = (nextPage - 1) * PHOTOS_PER_PAGE;
+    const endIndex = startIndex + PHOTOS_PER_PAGE;
+    const newPhotos = photoUrls.slice(startIndex, endIndex);
+
+    if (newPhotos.length > 0) {
+      setDisplayedPhotos(prev => [...prev, ...newPhotos]);
+      setPage(nextPage);
+    }
+    setIsLoading(false);
+  }, [page, isLoading, activeTab]);
+
+  const renderFooter = () => {
+    if (!isLoading) return null;
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="small" color="#F43F5E" />
+      </View>
+    );
+  };
+
  const handleLogout = async () => {
     Alert.alert(
       "Logout",
@@ -44,7 +113,6 @@ const dispatch = useDispatch<AppDispatch>();
           onPress: async () => {
             try {
               dispatch(logout());
-              console.log('Logout successful, navigating to Login');
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
@@ -58,138 +126,20 @@ const dispatch = useDispatch<AppDispatch>();
       ]
     );
   };
- const renderPhotoItem = ({ item, index }:any) => (
-   <View style={styles.photoItem}>
-     <Image
-       source={{ uri: item }}
-       style={styles.photoImage}
-       resizeMode='center'
-     />
-   </View>
- );
+
  const handleEditProfile = () => {
   navigation.navigate('EditProfile');
-  console.log("user",user)
 };
 
- const renderTripItem = ({ item, index }:any) => (
-   <View style={styles.tripCard}>
-     <View style={styles.tripCardContent}>
-       <View style={styles.tripImageContainer}>
-         <Image
-           source={{ uri: `https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg` }}
-           style={styles.tripImage}
-           resizeMode="cover"
-         />
-       </View>
-       <View style={styles.tripInfo}>
-         <Text style={styles.tripTitle}>{item.title}</Text>
-         <View style={styles.tripDateContainer}>
-           {/* Calendar icon */}
-           <Text style={styles.tripDateText}>{item.date}</Text>
-         </View>
-         <View style={styles.tripCompanionsContainer}>
-           {/* Users icon */}
-           <Text style={styles.tripCompanionsText}>{item.companions}</Text>
-         </View>
-       </View>
-       <View style={[styles.tripBadge, { backgroundColor: item.status === 'Upcoming' ? '#10B981' : '#6B7280' }]}>
-         <Text style={styles.tripBadgeText}>{item.status}</Text>
-       </View>
-     </View>
-   </View>
- );
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setNumColumns(tab === 'Photos' ? 3 : 1);
+  };
 
- const renderReviewItem = ({ item, index }:any) => (
-   <View style={styles.reviewCard}>
-     <View style={styles.reviewHeader}>
-       <View style={styles.reviewerAvatar}>
-         <Image
-           source={{ uri: `https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg` }}
-           style={styles.avatarImage}
-           resizeMode="cover"
-         />
-       </View>
-       <View style={styles.reviewerInfo}>
-         <Text style={styles.reviewerName}>{item.name}</Text>
-         <View style={styles.reviewDateContainer}>
-           {/* Calendar icon */}
-           <Text style={styles.reviewDateText}>{item.date}</Text>
-         </View>
-       </View>
-       <View style={styles.reviewStars}>
-         {[...Array(5)].map((_, i) => (
-           <View key={i} style={styles.starContainer}>
-             {/* Star icon */}
-             <View style={[styles.star, { backgroundColor: i < item.rating ? '#FCD34D' : '#D1D5DB' }]} />
-           </View>
-         ))}
-       </View>
-     </View>
-     <Text style={styles.reviewText}>{item.text}</Text>
-   </View>
- );
- const photoUrls = [
-  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
-  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
-  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
-  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
-  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
-  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
-  'https://www.mistay.in/travel-blog/content/images/2020/05/cover-9.jpg',
-  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
-  'https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg',
-];
- const renderTabContent = () => {
-   if (activeTab === 'Photos') {
-     return (
-       <View style={styles.tabContent}>
-         <FlatList
-         key={`cols-${numColumns}`} 
-           data={photoUrls}
-           renderItem={renderPhotoItem}
-           keyExtractor={(item, index) => index.toString()}
-           numColumns={numColumns}
-           columnWrapperStyle={styles.photoRow}
-           scrollEnabled={false}
-         />
-       </View>
-     );
-   } else if (activeTab === 'Trips') {
-     return (
-       <View style={styles.tabContent}>
-         <FlatList
-           data={[
-             { title: 'Bali Adventure', date: 'June 15-22, 2023', companions: '3 companions', status: 'Completed' },
-             { title: 'European Backpacking', date: 'August 5-20, 2023', companions: '2 companions', status: 'Upcoming' },
-             { title: 'Japan Explorer', date: 'October 10-25, 2023', companions: 'Solo', status: 'Upcoming' },
-           ]}
-           renderItem={renderTripItem}
-           keyExtractor={(item, index) => index.toString()}
-           scrollEnabled={false}
-         />
-       </View>
-     );
-   } else {
-     return (
-       <View style={styles.tabContent}>
-         <FlatList
-           data={[
-             { name: 'Sarah Johnson', date: 'May 12, 2023', rating: 5, text: 'Amazing travel companion! We had such a great time exploring Tokyo together.' },
-             { name: 'Michael Chen', date: 'April 5, 2023', rating: 4, text: 'Great experience traveling with this person. Very organized and friendly.' },
-             { name: 'Emma Wilson', date: 'March 18, 2023', rating: 5, text: 'One of the best travel experiences I\'ve had. Highly recommend!' },
-           ]}
-           renderItem={renderReviewItem}
-           keyExtractor={(item, index) => index.toString()}
-           scrollEnabled={false}
-         />
-       </View>
-     );
-   }
- };
+  // const listKey = useMemo(() => `list-${activeTab}-${numColumns}`, [activeTab, numColumns]);
 
-  return (
-    <SafeAreaView style={styles.container}>
+  const renderHeader = () => (
+    <>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -207,7 +157,6 @@ const dispatch = useDispatch<AppDispatch>();
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView}>
         <View style={styles.profileHeader}>
           <LinearGradient
             colors={['#FB7185', '#38BDF8']}
@@ -239,6 +188,7 @@ const dispatch = useDispatch<AppDispatch>();
             <Ionicons name="location-outline" size={20} color="black" />
             <Text style={styles.locationText}>San Francisco, California</Text>
           </View>
+
           <View style={styles.actionButtons}>
           <TouchableOpacity 
               style={[styles.button, styles.editButton]}
@@ -248,9 +198,10 @@ const dispatch = useDispatch<AppDispatch>();
               <Text style={styles.editButtonText}>Edit Profile</Text>
             </TouchableOpacity>
 
-         
-            <TouchableOpacity style={[styles.button, styles.messageButton]} onPress={()=>navigation.navigate('Feedback')}>
-              {/* MessageCircle icon */}
+          <TouchableOpacity 
+            style={[styles.button, styles.messageButton]} 
+            onPress={() => navigation.navigate('Feedback')}
+          >
               <Ionicons name="chatbubbles" size={24} color="white" />
               <Text style={styles.messageButtonText}>Feedback</Text>
             </TouchableOpacity>
@@ -318,27 +269,175 @@ const dispatch = useDispatch<AppDispatch>();
           <View style={styles.tabs}>
             <TouchableOpacity 
               style={[styles.tab, activeTab === 'Photos' && styles.activeTab]}
-              onPress={() => setActiveTab('Photos')}
+            onPress={() => handleTabChange('Photos')}
             >
               <Text style={[styles.tabText, activeTab === 'Photos' && styles.activeTabText]}>Photos</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, activeTab === 'Trips' && styles.activeTab]}
-              onPress={() => setActiveTab('Trips')}
+            onPress={() => handleTabChange('Trips')}
             >
               <Text style={[styles.tabText, activeTab === 'Trips' && styles.activeTabText]}>Trips</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, activeTab === 'Reviews' && styles.activeTab]}
-              onPress={() => setActiveTab('Reviews')}
+            onPress={() => handleTabChange('Reviews')}
             >
               <Text style={[styles.tabText, activeTab === 'Reviews' && styles.activeTabText]}>Reviews</Text>
             </TouchableOpacity>
           </View>
+      </View>
+    </>
+  );
+  const PhotoItemRenderer = ({ uri }: { uri: string }) => {
+    const getColorFromImage = (url: string) => {
+      if (url.includes('red') || url.includes('F43F5E')) return '#F43F5E';
+      if (url.includes('blue') || url.includes('38BDF8')) return '#38BDF8';
+      if (url.includes('green') || url.includes('10B981')) return '#10B981';
+      if (url.includes('yellow') || url.includes('FCD34D')) return '#FCD34D';
+      if (url.includes('purple') || url.includes('8B5CF6')) return '#8B5CF6';
+      if (url.includes('pink') || url.includes('EC4899')) return '#EC4899';
+      if (url.includes('orange') || url.includes('F97316')) return '#F97316';
+      return '#1F2937';
+    };
 
-          {renderTabContent()}
+    const shadowColor = getColorFromImage(uri);
+
+    const shadowStyle = useMemo(() => ({
+      ...Platform.select({
+        ios: {
+          shadowColor: shadowColor,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.8,
+          shadowRadius: 20,
+        },
+        android: {
+          elevation: 24,
+          backgroundColor: '#fff',
+        },
+      }),
+    }), [shadowColor]);
+
+    return (
+      <View style={styles.photoItemContainer}>
+        {Platform.OS === 'android' && (
+          <View style={[styles.androidShadow, { backgroundColor: shadowColor + '40' }]} />
+        )}
+        <View style={[styles.photoItem, shadowStyle]}>
+          <View style={styles.photoInnerContainer}>
+            <Image 
+              source={{ uri }} 
+              style={styles.photoImage} 
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.4)']}
+              style={styles.gradientOverlay}
+            />
+          </View>
         </View>
-      </ScrollView>
+      </View>
+    );
+  };
+  
+  const renderItem = ({ item, index }: { item: PhotoItem | TripItem | ReviewItem; index: number }) => {
+    if (activeTab === 'Photos') {
+      const photoItem = item as PhotoItem;
+      return <PhotoItemRenderer uri={photoItem.uri} />;
+    } else if (activeTab === 'Trips') {
+      const tripItem = item as TripItem;
+      return (
+        <View style={styles.tripCard}>
+          <View style={styles.tripCardContent}>
+            <View style={styles.tripImageContainer}>
+              <Image
+                source={{ uri: `https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg` }}
+                style={styles.tripImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.tripInfo}>
+              <Text style={styles.tripTitle}>{tripItem.title}</Text>
+              <View style={styles.tripDateContainer}>
+                <Text style={styles.tripDateText}>{tripItem.date}</Text>
+              </View>
+              <View style={styles.tripCompanionsContainer}>
+                <Text style={styles.tripCompanionsText}>{tripItem.companions}</Text>
+              </View>
+            </View>
+            <View style={[styles.tripBadge, { backgroundColor: tripItem.status === 'Upcoming' ? '#10B981' : '#6B7280' }]}>
+              <Text style={styles.tripBadgeText}>{tripItem.status}</Text>
+            </View>
+          </View>
+        </View>
+      );
+    } else {
+      const reviewItem = item as ReviewItem;
+      return (
+        <View style={styles.reviewCard}>
+          <View style={styles.reviewHeader}>
+            <View style={styles.reviewerAvatar}>
+              <Image
+                source={{ uri: `https://vaya.in/wp-content/uploads/2021/01/Top-10-Ideas-to-Make-the-Road-Trips-More-Fun.jpg` }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.reviewerInfo}>
+              <Text style={styles.reviewerName}>{reviewItem.name}</Text>
+              <View style={styles.reviewDateContainer}>
+                <Text style={styles.reviewDateText}>{reviewItem.date}</Text>
+              </View>
+            </View>
+            <View style={styles.reviewStars}>
+              {[...Array(5)].map((_, i) => (
+                <View key={i} style={styles.starContainer}>
+                  <View style={[styles.star, { backgroundColor: i < reviewItem.rating ? '#FCD34D' : '#D1D5DB' }]} />
+                </View>
+              ))}
+            </View>
+          </View>
+          <Text style={styles.reviewText}>{reviewItem.text}</Text>
+        </View>
+      );
+    }
+  };
+
+  const getData = (): TabData => {
+    if (activeTab === 'Photos') {
+      return displayedPhotos;
+    } else if (activeTab === 'Trips') {
+      return [
+        { title: 'Bali Adventure', date: 'June 15-22, 2023', companions: '3 companions', status: 'Completed' },
+        { title: 'European Backpacking', date: 'August 5-20, 2023', companions: '2 companions', status: 'Upcoming' },
+        { title: 'Japan Explorer', date: 'October 10-25, 2023', companions: 'Solo', status: 'Upcoming' },
+      ];
+    } else {
+      return [
+        { name: 'Sarah Johnson', date: 'May 12, 2023', rating: 5, text: 'Amazing travel companion! We had such a great time exploring Tokyo together.' },
+        { name: 'Michael Chen', date: 'April 5, 2023', rating: 4, text: 'Great experience traveling with this person. Very organized and friendly.' },
+        { name: 'Emma Wilson', date: 'March 18, 2023', rating: 5, text: 'One of the best travel experiences I\'ve had. Highly recommend!' },
+      ];
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        key={activeTab}
+        data={getData()}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => `${activeTab}-${index}`}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        numColumns={activeTab === 'Photos' ? 3 : 1}
+        columnWrapperStyle={activeTab === 'Photos' ? styles.photoRow : undefined}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        extraData={[activeTab, displayedPhotos]}
+        onEndReached={activeTab === 'Photos' ? loadMorePhotos : undefined}
+        onEndReachedThreshold={0.5}
+      />
     </SafeAreaView>
   );
 }
@@ -643,16 +742,61 @@ const styles = StyleSheet.create({
   photoRow: {
     justifyContent: 'space-between',
     marginBottom: scale(8),
+    paddingHorizontal: scale(8),
   },
-  photoItem: {
+  photoItemContainer: {
     width: scale(100),
     height: scale(100),
-    borderRadius: scale(8),
+    marginBottom: scale(8),
+    padding: scale(4),
+    position: 'relative',
+  },
+  androidShadow: {
+    position: 'absolute',
+    top: scale(4),
+    left: scale(4),
+    right: scale(4),
+    bottom: scale(4),
+    borderRadius: scale(12),
+    zIndex: 1,
+  },
+  photoItem: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scale(12),
+    backgroundColor: '#ffffff',
+    zIndex: 2,
+    ...Platform.select({
+      android: {
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.1)',
+      },
+    }),
+  },
+  photoInnerContainer: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scale(12),
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   photoImage: {
     width: '100%',
     height: '100%',
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '70%',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tripCard: {
     backgroundColor: '#fff',
@@ -834,5 +978,11 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontWeight: '600',
   },
-
+  listContent: {
+    paddingBottom: verticalScale(24),
+  },
+  loaderContainer: {
+    paddingVertical: scale(16),
+    alignItems: 'center',
+  },
 });

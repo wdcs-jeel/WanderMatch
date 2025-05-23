@@ -4,10 +4,6 @@ import { CommonActions } from '@react-navigation/native';
 import { Alert } from 'react-native';
 import { navigationRef } from './navigationService';
 
-// Create axios instance with base URL
-// API configuration
-// const navigation = useNavigation<NavigationProp>();
-// const dispatch = useDispatch<AppDispatch>();
 const API_BASE_URL = 'http://192.168.109.128:3000/api';
 const api = axios.create({
   baseURL: API_BASE_URL,

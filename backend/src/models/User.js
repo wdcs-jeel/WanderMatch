@@ -82,10 +82,6 @@ const userSchema = new mongoose.Schema({
   profilePhotos: [{
     type: String // URLs to stored photos
   }],
-  profileImage: {
-    type: String, // URL to main profile image
-    // required: true
-  },
   
   // Timestamps
   createdAt: {

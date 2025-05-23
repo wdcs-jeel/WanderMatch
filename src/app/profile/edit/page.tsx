@@ -13,11 +13,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import * as ImagePicker from 'react-native-image-picker';
 
 import { NavigationProp } from '../../../utils/navigation/RootStackParamList';
 import { LOOKING_FOR_OPTIONS, LookingForOption, TRAVEL_STYLE_OPTIONS, TRAVEL_TYPES, TravelStyle, TravelType } from '../../../utils/types/types';
-// import { User } from '../../../context/ContextType';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../redux/store';
 import { updateProfile } from '../../../redux/slice/authSlice';
@@ -40,7 +38,7 @@ export default function EditProfilePage() {
   const {user,isLoading} = useSelector((state: RootState) => state.auth);
   const [isSaving, setIsSaving] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  
+  // const [colors, setColors] = useState<ImageColorsResult | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
     fullName: '',
     bio: '',
@@ -49,7 +47,6 @@ export default function EditProfilePage() {
     travelStyle: '',
     languages: '',
   });
-
   // Load user data when component mounts
   useEffect(() => {
     if (!user && !isLoading) {
