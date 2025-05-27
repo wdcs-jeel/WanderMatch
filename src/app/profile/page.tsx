@@ -251,16 +251,16 @@ const dispatch = useDispatch<AppDispatch>();
           </View>
 
           <View style={styles.connectedAccounts}>
-            <Text style={styles.connectedAccountsTitle}>Connected Accounts</Text>
+            <Text style={styles.connectedAccountsTitle}>Charts</Text>
             <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-instagram" size={20} color="#E4405F" />
-                <Text style={styles.socialButtonText}>Instagram</Text>
+              <TouchableOpacity style={styles.socialButton} onPress={() => navigation.navigate('ExpenseChart')}>
+                <Ionicons name="bar-chart-outline" size={20} color="#E4405F" />
+                <Text style={styles.socialButtonText}>Expense Visualization</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
+              {/* <TouchableOpacity style={styles.socialButton}>
                 <Ionicons name="musical-notes-outline" size={20} color="blue" />
                 <Text style={styles.socialButtonText}>Spotify</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
         </View>

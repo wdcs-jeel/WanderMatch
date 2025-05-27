@@ -9,7 +9,7 @@ import BottomTabNavigator from './BottomTabNavigator';
 import AddTripDataPage from '../app/explore/add/AddTripDataPage';
 import FeedbackScreen from '../app/profile/feedback/feedback';
 import AddFeedback from '../app/profile/feedback/add/addFeedback';
-
+import ExpenseChartPage from '../app/profile/chart/expense_barchart';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -21,6 +21,7 @@ export default function AppNavigator() {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
       <Stack.Screen name="AddTrip" component={AddTripDataPage} />
       <Stack.Screen name="EditProfile" component={EditProfilePage} />
+      <Stack.Screen name="ExpenseChart" component={ExpenseChartPage} />
       <Stack.Screen name="Feedback" component={FeedbackScreen} />
       <Stack.Screen name="AddFeedback" component={AddFeedback} />
       <Stack.Screen name="MainApp" component={BottomTabNavigator} />

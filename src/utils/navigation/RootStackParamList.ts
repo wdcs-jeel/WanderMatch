@@ -11,6 +11,7 @@ type RootStackParamList = {
     AddFeedback:{editId:any,editFeedback:any} | undefined,
     AddTrip:undefined;
     ForgotPassword: undefined;
+    ExpenseChart: undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
